@@ -1,10 +1,6 @@
 ### 1. Topic Title:
 ## Intelligent Group Decision Support System Simulator Based on Information Fusion and AI Methods
 
-### 2. Abstract:
-This project aims to design and implement a prototype Group Decision Support System (GDSS) that integrates multiple information sources using AI-based fusion techniques. The system will simulate multiple decision-making agents, each with independent information inputs and uncertainty levels. The goal is to fuse their opinions into a single, collective decision using probabilistic and AI-driven fusion models. The prototype will provide a visual interface using **Qt Quick** to display the decision process dynamically.
-
-
 ### 2. Abstract
 
 This project aims to design and implement a prototype **Group Decision Support System (GDSS)** that integrates multiple information sources using **AI-based fusion techniques**. The system will simulate multiple decision-making agents, each with independent information inputs and uncertainty levels. The goal is to fuse their opinions into a single, collective decision using probabilistic and AI-driven fusion models.  
