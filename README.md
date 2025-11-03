@@ -34,7 +34,7 @@ Imagine a scenario where experts independently assess the risks of a project. GD
 >- **Integration:** A huge set of **C++** libraries easy integration with **Python (PySide6/PyQt)** modules.  
 >- **Professional UI:** Industry-level visuals for simulation and decision systems using QML language.  
 >#### MATLAB Integration
->As my supervisor uses MATLAB, **Qt Quick** allows deploying MATLAB  pre writen codes and algorithms into the new project through the **MATLAB Engine API for C++**.
+>As MATLAB provide many tools in DSS, so implementing MATLAB in the project can ail to reduce the development time. **Qt Quick** allows deploying MATLAB  pre writen codes and algorithms into the new project through the **MATLAB Engine API for C++**.
 
 ---
 
