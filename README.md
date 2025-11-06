@@ -41,8 +41,14 @@ Imagine a scenario where experts independently assess the risks of a project. GD
 ### 3.Background and Key Concepts
 - **Group Decision Support Systems (GDSS)** — frameworks aiding groups in collective decision-making.
     
-- **Information Fusion** — combining data from multiple sources to improve reliability. 
-- **AI Methods** — e.g., weighted neural fusion, Dempster-Shafer theory, Bayesian models.
+- **Information Fusion**: combining data from multiple sources to improve reliability. 
+- **AI​‍​‌‍​‍‌ and ML Methods**:
+	- Bayesian Fusion: A probabilistic method for combining uncertain beliefs. 
+	- Weighted Neural Fusion: Employing trained networks to figure out the best fusion weights. 
+	- Fuzzy Inference Systems: Being able to process qualitative or ambiguous expert input. 
+	- Dempster–Shafer Theory: Using belief functions for the situations where data is uncertain and ​‍​‌‍​‍‌incomplete.
+
+
 - **Model Programming Techniques** — modular and multi-language programming to simulate systems.
 
 ---
@@ -110,6 +116,13 @@ flowchart LR
 c ==Optional bridge==> d(["  MATLAB Code
  • Legacy Models / Analysis "])
 ```
+---
+### Real-World Examples
+Many major corporations already use Decision Support Systems, not just for finance or logistics, but also for sustainable energy management.​ 
+**For example**: Toyota uses DSS to plan EV production, Shell for renewable portfolio decisions, Amazon for carbon-efficient logistics, and Siemens for smart energy systems.  ​ 
+
+ [Click to see more detail of real-world exampels of DSSS ](https://aghedupl-my.sharepoint.com/:p:/g/personal/vmoeinifar_agh_edu_pl/ESGFjzd4So5JsOeX-7Qx-KgBRrHHCCbvG09OvnwXgj6t7w?rtime=wLr_Agod3kg)
+ 
 ---
 By: Vahid Moeinifar
 
