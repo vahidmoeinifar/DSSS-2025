@@ -1,0 +1,47 @@
+# Build directories
+build-*/
+*.pro.user
+*.pro.user.*
+Makefile*
+*.o
+*.a
+moc_*
+qrc_*
+ui_*
+
+# Qt Creator
+*.autosave
+
+# Compiled files
+*.qm
+*.qrc
+
+# Debug and Release files
+*.debug
+*.dll
+*.exe
+*.release
+
+# QML cache
+qmlcache_loader.cpp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+
+# Qt
+*.qmlc
+*.jaml
+
+# Project specific
+# Add any other files/folders you want to ignore
