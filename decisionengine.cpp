@@ -1,8 +1,16 @@
 #include "DecisionEngine.h"
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QDebug>
 
 DecisionEngine::DecisionEngine(QObject *parent)
-    : QObject(parent), m_fusedValue(0.0)
+    : QObject(parent),
+    m_fusedValue(0.0),
+    m_python(new QProcess(this))
 {
+    connect(m_python, &QProcess::finished,
+            this, &DecisionEngine::onPythonFinished);
 }
 
 void DecisionEngine::addAgentValue(double value)
@@ -17,16 +25,46 @@ void DecisionEngine::clearValues()
     emit fusedValueChanged();
 }
 
-void DecisionEngine::computeFusion()
+void DecisionEngine::runFusion()
 {
-    if (m_agentValues.isEmpty())
+    if (m_agentValues.isEmpty()) {
+        emit pythonError("No agent data!");
         return;
+    }
 
-    double sum = 0.0;
-    for (const auto &v : m_agentValues)
-        sum += v.toDouble();
+    QJsonArray arr;
+    for (const QVariant &v : m_agentValues)
+        arr.append(v.toDouble());
 
-    m_fusedValue = sum / m_agentValues.size();
+    QJsonObject root;
+    root["values"] = arr;
+
+    QByteArray inputData = QJsonDocument(root).toJson();
+
+    m_python->setProgram("python");
+    m_python->setArguments({"fuse.py"});
+    m_python->start();
+
+    m_python->write(inputData);
+    m_python->closeWriteChannel();
+}
+
+void DecisionEngine::onPythonFinished(int exitCode, QProcess::ExitStatus status)
+{
+    if (status != QProcess::NormalExit) {
+        emit pythonError("Python crashed.");
+        return;
+    }
+
+    QByteArray output = m_python->readAllStandardOutput();
+    QJsonDocument doc = QJsonDocument::fromJson(output);
+
+    if (!doc.isObject()) {
+        emit pythonError("Python returned invalid JSON.");
+        return;
+    }
+
+    m_fusedValue = doc["fused"].toDouble();
     emit fusedValueChanged();
 }
 

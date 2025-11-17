@@ -1,58 +1,48 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+
 import GDSS 1.0
 
 ApplicationWindow {
+    width: 650
+    height: 400
     visible: true
-    width: 640
-    height: 480
-    title: "GDSS Simulator"
+    title: "GDSS Fusion Simulator"
 
     DecisionEngine {
         id: engine
-        onFusedValueChanged: resultLabel.text = "Fused Result: " + fusedValue.toFixed(2)
+        onPythonError: console.log("Python error: " + msg)
     }
 
     ColumnLayout {
         anchors.centerIn: parent
-        spacing: 10
-
-        TextField {
-            id: inputField
-            placeholderText: "Enter agent value"
-            validator: DoubleValidator {}
-            Layout.fillWidth: true
-        }
 
         RowLayout {
-            Button {
-                text: "Add Value"
-                onClicked: {
-                    if (inputField.text !== "") {
-                        engine.addAgentValue(parseFloat(inputField.text))
-                        inputField.text = ""
-                    }
-                }
+            spacing: 10
+            TextField {
+                id: valueInput
+                width: 120
+                placeholderText: "Value"
             }
 
             Button {
-                text: "Compute Fusion"
-                onClicked: engine.computeFusion()
-            }
-
-            Button {
-                text: "Clear"
-                onClicked: engine.clearValues()
+                text: "Add Agent"
+                onClicked: engine.addAgentValue(parseFloat(valueInput.text))
             }
         }
 
-        Label {
-            id: resultLabel
-            text: "Fused Result: --"
-            font.pixelSize: 20
-            horizontalAlignment: Text.AlignHCenter
-            Layout.alignment: Qt.AlignHCenter
+        Button {
+            text: "Run Fusion (Python)"
+            Layout.topMargin: 20
+            onClicked: engine.runFusion()
+        }
+
+        Text {
+            text: "Fusion Result = " + engine.fusedValue.toFixed(4)
+            font.pixelSize: 22
+            color: "cyan"
+            Layout.topMargin: 15
         }
     }
 }

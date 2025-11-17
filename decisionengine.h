@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QVariantList>
+#include <QProcess>
 
 class DecisionEngine : public QObject
 {
@@ -14,16 +15,22 @@ public:
 
     Q_INVOKABLE void addAgentValue(double value);
     Q_INVOKABLE void clearValues();
-    Q_INVOKABLE void computeFusion();
+    Q_INVOKABLE void runFusion();
 
     double fusedValue() const;
 
 signals:
     void fusedValueChanged();
+    void pythonError(QString msg);
+
+private slots:
+    void onPythonFinished(int exitCode, QProcess::ExitStatus status);
 
 private:
     QVariantList m_agentValues;
     double m_fusedValue;
+
+    QProcess *m_python;
 };
 
 #endif // DECISIONENGINE_H
