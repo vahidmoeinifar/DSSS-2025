@@ -41,7 +41,7 @@ ApplicationWindow {
         Text {
             text: "Fusion Result = " + engine.fusedValue.toFixed(4)
             font.pixelSize: 22
-            color: "cyan"
+            color: "red"
             Layout.topMargin: 15
         }
     }
