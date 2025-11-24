@@ -19,6 +19,7 @@ qt_add_qml_module(appDSSS_2025
         Main.qml
         SOURCES decisionengine.h decisionengine.cpp
         RESOURCES scripts/fuse.py
+        QML_FILES temp.qml
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
