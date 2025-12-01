@@ -25,15 +25,18 @@ void DecisionEngine::clearValues()
     emit fusedValueChanged();
 }
 
-void DecisionEngine::runFusion()
+void DecisionEngine::runFusion(const QVariantList &agentValues)
 {
-    if (m_agentValues.isEmpty()) {
+    if (agentValues.isEmpty()) {
         emit pythonError("No agent data!");
         return;
     }
 
+    // Store values internally if needed
+    m_agentValues = agentValues;
+
     QJsonArray arr;
-    for (const QVariant &v : m_agentValues)
+    for (const QVariant &v : agentValues)
         arr.append(v.toDouble());
 
     QJsonObject root;
@@ -41,10 +44,12 @@ void DecisionEngine::runFusion()
 
     QByteArray inputData = QJsonDocument(root).toJson();
 
+    // Prepare Python call
     m_python->setProgram("python");
     m_python->setArguments({"fuse.py"});
     m_python->start();
 
+    // Send JSON into python stdin
     m_python->write(inputData);
     m_python->closeWriteChannel();
 }

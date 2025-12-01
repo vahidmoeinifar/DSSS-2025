@@ -15,7 +15,7 @@ public:
 
     Q_INVOKABLE void addAgentValue(double value);
     Q_INVOKABLE void clearValues();
-    Q_INVOKABLE void runFusion();
+    Q_INVOKABLE void runFusion(const QVariantList &agentValues);
 
     double fusedValue() const;
 
