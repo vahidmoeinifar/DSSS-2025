@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls.Basic
 
-
 TextArea {
     property color mainColor
     property color secondColor
