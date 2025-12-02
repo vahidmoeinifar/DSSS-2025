@@ -11,6 +11,12 @@ DecisionEngine::DecisionEngine(QObject *parent)
 {
     connect(m_python, &QProcess::finished,
             this, &DecisionEngine::onPythonFinished);
+
+    connect(m_python, &QProcess::readyReadStandardOutput, this, [this]() {
+        m_pythonOutput.append(m_python->readAllStandardOutput());
+        qDebug() << "Python partial STDOUT:" << m_pythonOutput;
+    });
+
 }
 
 void DecisionEngine::addAgentValue(double value)
@@ -46,7 +52,8 @@ void DecisionEngine::runFusion(const QVariantList &agentValues)
 
     // Prepare Python call
     m_python->setProgram("python");
-    m_python->setArguments({"fuse.py"});
+    m_python->setArguments({ "C:/Users/Karabey/Documents/DSSS-2025/scripts/fuse.py" });
+
     m_python->start();
 
     // Send JSON into python stdin
@@ -61,16 +68,24 @@ void DecisionEngine::onPythonFinished(int exitCode, QProcess::ExitStatus status)
         return;
     }
 
-    QByteArray output = m_python->readAllStandardOutput();
-    QJsonDocument doc = QJsonDocument::fromJson(output);
+    m_pythonOutput.append(m_python->readAllStandardOutput());
+
+    if (m_pythonOutput.isEmpty()) {
+        emit pythonError("Python returned no output.");
+        return;
+    }
+
+    QJsonDocument doc = QJsonDocument::fromJson(m_pythonOutput);
 
     if (!doc.isObject()) {
-        emit pythonError("Python returned invalid JSON.");
+        emit pythonError("Python returned invalid JSON: " + m_pythonOutput);
         return;
     }
 
     m_fusedValue = doc["fused"].toDouble();
     emit fusedValueChanged();
+
+    m_pythonOutput.clear();
 }
 
 double DecisionEngine::fusedValue() const

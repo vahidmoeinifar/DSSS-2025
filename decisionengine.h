@@ -31,6 +31,8 @@ private:
     double m_fusedValue;
 
     QProcess *m_python;
+    QByteArray m_pythonOutput;
+
 };
 
 #endif // DECISIONENGINE_H

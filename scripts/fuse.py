@@ -22,4 +22,6 @@ model.fit(X_train, y_train)
 fused = float(model.predict(values.reshape(1, -1))[0])
 
 # print result for C++
-print(json.dumps({"fused": fused}))
+result = json.dumps({"fused": fused})
+print(result, flush=True)  # Add flush=True to ensure output is sent
+sys.stdout.flush()  # Alternative flush method
