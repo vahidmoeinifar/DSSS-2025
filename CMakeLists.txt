@@ -24,13 +24,20 @@ qt_add_qml_module(appDSSS_2025
         QML_FILES MyTextfield.qml
         QML_FILES SpaceLine.qml
         QML_FILES SpaceLine_V.qml
-        QML_FILES MyTextfArea.qml
+        QML_FILES
         QML_FILES MyMenu.qml
         RESOURCES fonts/FontAwesomeFree-Regular-400.otf fonts/FontAwesomeFree-Solid-900.otf fonts/Roboto-Light.ttf fonts/Roboto-LightItalic.ttf fonts/Roboto-SemiBold.ttf fonts/Roboto-SemiBoldItalic.ttf fonts/Roboto-Thin.ttf fonts/Roboto-ThinItalic.ttf
         RESOURCES icons/open-source.png
         RESOURCES icons/help.png
         RESOURCES icons/about.png icons/exit.png
         QML_FILES About.qml
+        RESOURCES scripts/neural.py
+        RESOURCES scripts/weighted.py
+        RESOURCES scripts/fuzzy.py
+        RESOURCES scripts/random_forest.py
+        RESOURCES scripts/consensus.py
+        QML_FILES MyCombobox.qml
+        QML_FILES MyTextfArea.qml
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

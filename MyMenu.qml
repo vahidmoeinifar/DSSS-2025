@@ -5,11 +5,6 @@ Item {
     width: 50
     height: 50
 
-    FontLoader {
-        id: fontAwsomeRegular
-        source: "fonts/FontAwesomeFree-Solid-900.otf"
-    }
-
     About {
         id: aboutDialog
     }
@@ -57,7 +52,7 @@ Item {
             MenuItem {
                 text: "About"
                 icon.source: "icons/about.png"
-                onTriggered: aboutDialog.open()
+                onTriggered: aboutDialog.show()
             }
 
             MenuSeparator {}
