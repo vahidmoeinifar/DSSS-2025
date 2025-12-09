@@ -92,8 +92,29 @@ ApplicationWindow {
                         height: 1
                         color: "transparent"
                     }
+                    MyMenu {
+                        id: myMenu
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 40
+                        height: 40
 
-                    MyMenu {   anchors.verticalCenter: parent.verticalCenter
+                        // Handle data loaded from file - directly load to model
+                        onDataLoaded: function(values, fileName) {
+                            if (values && values.length > 0) {
+                                // Directly load values into model
+                                for (var i = 0; i < values.length; i++) {
+                                    agentModel.append({ "value": values[i] })
+                                }
+                                showMessage("Loaded " + values.length + " values from " + fileName, successColor)
+                            } else {
+                                showMessage("No valid values found in file", warningColor)
+                            }
+                        }
+
+                        // Handle messages from MyMenu
+                        onShowMessage: function(message, color) {
+                            showMessage(message, color)
+                        }
                     }
                 }
             }
@@ -133,53 +154,108 @@ ApplicationWindow {
                                     color: textColor
                                 }
 
-                                RowLayout {
-                                    spacing: 10
+                                MyButton {
+                                    id: openDataButton
+                                    mainColor: Qt.lighter(elementsColor, 1.2)
+                                    Layout.fillWidth: true
+                                    _height: 35
+                                    text: "📂 Open Data"
+                                    font.pixelSize: 12
 
-                                    MyTextfield {
-                                        id: valueInput
+                                    onClicked: {
+                                        dataFileDialog.open()
+                                    }
+                                }
+                                // Batch Input Section
+                                ColumnLayout {
+                                    spacing: 10
+                                    Layout.topMargin: 10
+
+                                    Text {
+                                        text: "Batch Input"
+                                        font.pixelSize: 14
+                                        font.bold: true
+                                        color: textColor
+                                    }
+
+                                    MyTextfArea {
+                                        id: valueInputii
                                         mainColor: elementsColor
                                         secondColor: Qt.lighter(elementsColor)
                                         Layout.fillWidth: true
-                                        _height: 35
-                                        placeholderText: "Enter value (0-1)..."
-                                        font.pixelSize: 12
-
-                                        validator: DoubleValidator {
-                                            bottom: 0.0
-                                            top: 1.0
-                                        }
-                                        onAccepted: addButton.clicked()
+                                        Layout.preferredHeight: 100
+                                        placeholderText: "Or enter comma-separated values (0.75, 0.5, 0.25)..."
+                                        font.pixelSize: 11
                                     }
 
-                                    MyButton {
-                                        id: addButton
-                                        mainColor: elementsColor
-                                        _width: 80
-                                        _height: 35
-                                        text: "Add"
-                                        font.pixelSize: 12
-                                        onClicked: {
-                                            if (valueInput.text.length === 0)
-                                                return
+                                    RowLayout {
+                                        spacing: 10
 
-                                            var val = parseFloat(valueInput.text)
-                                            if (val >= 0 && val <= 1) {
-                                                agentModel.append({ "value": val })
-                                                valueInput.text = ""
-                                                valueInput.focus = true
-                                            } else {
-                                                showMessage("Value must be between 0 and 1", warningColor)
-                                                valueInput.text = ""
+                                        MyButton {
+                                            id: parseButton
+                                            mainColor: elementsColor
+                                            Layout.fillWidth: true
+                                            _height: 35
+                                            text: "Parse & Add"
+                                            font.pixelSize: 11
+                                            enabled: valueInputii.text.length > 0
+                                            onClicked: {
+                                                if (valueInputii.text.length === 0) {
+                                                    showMessage("Please enter some values", warningColor)
+                                                    return
+                                                }
+
+                                                var text = valueInputii.text.trim()
+                                                var values = text.split(',').map(function(v) {
+                                                    return v.trim()
+                                                })
+
+                                                var validValues = []
+                                                var invalidCount = 0
+
+                                                for (var i = 0; i < values.length; i++) {
+                                                    var val = parseFloat(values[i])
+                                                    if (!isNaN(val) && val >= 0 && val <= 1) {
+                                                        validValues.push(val)
+                                                    } else {
+                                                        invalidCount++
+                                                    }
+                                                }
+
+                                                if (validValues.length > 0) {
+                                                    for (var j = 0; j < validValues.length; j++) {
+                                                        agentModel.append({ "value": validValues[j] })
+                                                    }
+
+                                                    showMessage("Added " + validValues.length + " valid values" +
+                                                                (invalidCount > 0 ? " (" + invalidCount + " invalid ignored)" : ""),
+                                                                successColor)
+                                                    valueInputii.text = ""
+                                                } else {
+                                                    showMessage("No valid values found (must be 0-1)", warningColor)
+                                                }
+                                            }
+                                        }
+
+                                        MyButton {
+                                            id: clearAllButton
+                                            mainColor: removeColor
+                                            _width: 100
+                                            _height: 35
+                                            text: "Clear All"
+                                            font.pixelSize: 11
+                                            onClicked: {
+                                                agentModel.clear()
+                                                showMessage("All values cleared", warningColor)
                                             }
                                         }
                                     }
                                 }
 
+
                                 // Agent List
                                 ColumnLayout {
                                     spacing: 5
-
                                     Text {
                                         text: "Agent Values (" + agentModel.count + ")"
                                         font.pixelSize: 12
@@ -243,91 +319,6 @@ ApplicationWindow {
                                 }
                             }
 
-                            // Batch Input Section
-                            ColumnLayout {
-                                spacing: 10
-                                Layout.topMargin: 10
-
-                                Text {
-                                    text: "Batch Input"
-                                    font.pixelSize: 14
-                                    font.bold: true
-                                    color: textColor
-                                }
-
-                                MyTextfArea {
-                                    id: valueInputii
-                                    mainColor: elementsColor
-                                    secondColor: Qt.lighter(elementsColor)
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 100
-                                    placeholderText: "Enter comma-separated values (0.75, 0.5, 0.25)..."
-                                    font.pixelSize: 11
-                                }
-
-                                RowLayout {
-                                    spacing: 10
-
-                                    MyButton {
-                                        id: parseButton
-                                        mainColor: elementsColor
-                                        Layout.fillWidth: true
-                                        _height: 35
-                                        text: "Parse & Add"
-                                        font.pixelSize: 11
-                                        enabled: valueInputii.text.length > 0
-                                        onClicked: {
-                                            if (valueInputii.text.length === 0) {
-                                                showMessage("Please enter some values", warningColor)
-                                                return
-                                            }
-
-                                            var text = valueInputii.text.trim()
-                                            var values = text.split(',').map(function(v) {
-                                                return v.trim()
-                                            })
-
-                                            var validValues = []
-                                            var invalidCount = 0
-
-                                            for (var i = 0; i < values.length; i++) {
-                                                var val = parseFloat(values[i])
-                                                if (!isNaN(val) && val >= 0 && val <= 1) {
-                                                    validValues.push(val)
-                                                } else {
-                                                    invalidCount++
-                                                }
-                                            }
-
-                                            if (validValues.length > 0) {
-                                                for (var j = 0; j < validValues.length; j++) {
-                                                    agentModel.append({ "value": validValues[j] })
-                                                }
-
-                                                showMessage("Added " + validValues.length + " valid values" +
-                                                            (invalidCount > 0 ? " (" + invalidCount + " invalid ignored)" : ""),
-                                                            successColor)
-                                                valueInputii.text = ""
-                                            } else {
-                                                showMessage("No valid values found (must be 0-1)", warningColor)
-                                            }
-                                        }
-                                    }
-
-                                    MyButton {
-                                        id: clearAllButton
-                                        mainColor: removeColor
-                                        _width: 100
-                                        _height: 35
-                                        text: "Clear All"
-                                        font.pixelSize: 11
-                                        onClicked: {
-                                            agentModel.clear()
-                                            showMessage("All values cleared", warningColor)
-                                        }
-                                    }
-                                }
-                            }
                         }
                     }
 
@@ -431,7 +422,7 @@ ApplicationWindow {
                                                 mainColor: elementsColor
                                                 Layout.fillWidth: true
                                                 _height: 25
-                                                text: "Load Script"
+                                                text: "📂 Load Script"
                                                 font.pixelSize: 10
                                                 onClicked: fileDialog.open()
                                             }
@@ -634,7 +625,7 @@ ApplicationWindow {
                                 }
                             }
 
-                            // Progress Bar Area
+                              // Progress Bar Area
                             ColumnLayout {
                                 spacing: 10
                                 Layout.fillWidth: true
@@ -705,6 +696,101 @@ ApplicationWindow {
         }
     }
 
+    // In main.qml, replace the entire FileDialog handler and related functions:
+
+    // File Dialog for opening data files
+    FileDialog {
+        id: dataFileDialog
+        title: "Open Data File"
+        nameFilters: ["Text files (*.txt)", "CSV files (*.csv)", "All files (*)"]
+
+        onAccepted: {
+            var filePath = dataFileDialog.file.toString()
+            // Convert file URL to local path
+            if (filePath.startsWith("file:///")) {
+                filePath = filePath.substring(8) // Windows
+            } else if (filePath.startsWith("file://")) {
+                filePath = filePath.substring(7) // Unix/Mac
+            }
+
+            // Load data directly from file
+            loadDataFromFileDirectly(filePath)
+        }
+    }
+
+    // Function to load data from file directly into model
+    function loadDataFromFileDirectly(filePath) {
+        console.log("Loading file:", filePath)
+
+        // Create an XMLHttpRequest directly
+        var xhr = new XMLHttpRequest()
+        var fileUrl = filePath
+
+        // Ensure we have a proper file URL
+        if (!filePath.startsWith("file://")) {
+            if (Qt.platform.os === "windows") {
+                fileUrl = "file:///" + filePath
+            } else {
+                fileUrl = "file://" + filePath
+            }
+        }
+
+        console.log("File URL:", fileUrl)
+
+        xhr.open("GET", fileUrl)
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                console.log("XHR Status:", xhr.status)
+                if (xhr.status === 200 || xhr.status === 0) {
+                    var content = xhr.responseText
+                    console.log("File content length:", content.length)
+
+                    var lines = content.split('\n')
+                    var validValues = []
+                    var invalidCount = 0
+                    var fileName = filePath.split('/').pop().split('\\').pop()
+
+                    for (var i = 0; i < lines.length; i++) {
+                        var line = lines[i].trim()
+                        if (line.length === 0 || line.startsWith('#')) continue
+
+                        // Parse values
+                        var lineValues = line.split(/[,;\s]+/)
+                        for (var j = 0; j < lineValues.length; j++) {
+                            var val = parseFloat(lineValues[j])
+                            if (!isNaN(val) && val >= 0 && val <= 1) {
+                                validValues.push(val)
+                            } else {
+                                invalidCount++
+                            }
+                        }
+                    }
+
+                    console.log("Parsed values - valid:", validValues.length, "invalid:", invalidCount)
+
+                    if (validValues.length > 0) {
+                        // Directly append valid values to the model
+                        for (var k = 0; k < validValues.length; k++) {
+                            agentModel.append({ "value": validValues[k] })
+                        }
+
+                        // Show success message
+                        var message = "Loaded " + validValues.length + " values from " + fileName
+                        if (invalidCount > 0) {
+                            message += " (" + invalidCount + " invalid values ignored)"
+                        }
+                        showMessage(message, successColor)
+                    } else {
+                        showMessage("No valid values (0-1) found in file", warningColor)
+                    }
+                } else {
+                    console.error("Failed to read file")
+                    showMessage("Failed to read file: " + xhr.statusText, removeColor)
+                }
+            }
+        }
+        xhr.send()
+    }
     // Script Info Popup
     Popup {
         id: scriptInfoPopup
@@ -884,6 +970,7 @@ ApplicationWindow {
         }
     }
 
+
     // File Dialog for selecting custom scripts
     FileDialog {
         id: fileDialog
@@ -906,7 +993,15 @@ ApplicationWindow {
             }
 
             customScriptPath = filePath
-            showMessage("Custom script loaded: " + customScriptPath.split('/').pop().split('\\').pop(), successColor)
+
+            var scriptName = customScriptPath.split('/').pop().split('\\').pop()
+            scriptModel.append({
+                                   "name": scriptName.replace('.py', ' (Custom)'),
+                                   "value": customScriptPath,
+                                   "description": "Custom Python script from " + customScriptPath
+                               })
+            showMessage("Custom script added to algorithm list", successColor)
+
         }
     }
 
