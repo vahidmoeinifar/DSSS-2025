@@ -442,24 +442,6 @@ ApplicationWindow {
                                         }
                                     }
                                 }
-
-                                MyButton {
-                                    mainColor: customScriptPath === "" ? Qt.darker(elementsColor, 1.5) : successColor
-                                    Layout.fillWidth: true
-                                    _height: 35
-                                    text: "Add to Algorithms"
-                                    font.pixelSize: 11
-                                    enabled: customScriptPath !== ""
-                                    onClicked: {
-                                        var scriptName = customScriptPath.split('/').pop().split('\\').pop()
-                                        scriptModel.append({
-                                                               "name": scriptName.replace('.py', ' (Custom)'),
-                                                               "value": customScriptPath,
-                                                               "description": "Custom Python script from " + customScriptPath
-                                                           })
-                                        showMessage("Custom script added to algorithm list", successColor)
-                                    }
-                                }
                             }
 
                             // Status Display

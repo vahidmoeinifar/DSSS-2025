@@ -10,17 +10,6 @@ Item {
     signal dataLoaded(var values, var fileName)
     signal showMessage(string message, color color)
 
-    // REMOVE THIS - it should be handled in main.qml
-    // onDataLoaded: function(values, fileName) {
-    //       if (values && values.length > 0) {
-    //           loadConfirmationDialog.values = values
-    //           loadConfirmationDialog.fileName = fileName
-    //           loadConfirmationDialog.open()
-    //       } else {
-    //           showMessage("No valid values found in file", warningColor)
-    //       }
-    //   }
-
     FileDialog {
         id: dataFileDialog
         title: "Open Data File"
@@ -93,11 +82,11 @@ Item {
         x: -140  // Position to left of button
         y: menuButton.height
         width: 160
-        height: 210 //menuContent.height
+        height: 290 //menuContent.height
         padding: 5
 
         background:  Rectangle {
-            color: Qt.darker(bgColor, 1.1)
+            color: Qt.darker(bgColor, 2.1)
             border.color: elementsColor
             border.width: 1
             radius: 3
@@ -190,6 +179,39 @@ Item {
                 color: elementsColor
             }
 
+            // Repository
+            Rectangle {
+                width: parent.width
+                height: 40
+                color: menuRepoArea.containsMouse ? Qt.lighter(elementsColor, 1.2) : "transparent"
+
+                Row {
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.left: parent.left
+                    anchors.leftMargin: 10
+                    spacing: 10
+
+                    Text {
+                        text: "🐙"
+                        font.pixelSize: 14
+                        color: textColor
+                    }
+
+                    Text {
+                        text: "GitHub Repository"
+                        font.pixelSize: 12
+                        color: textColor
+                    }
+                }
+
+                MouseArea {
+                    id: menuRepoArea
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
+                    onClicked: Qt.openUrlExternally("https://github.com/vahidmoeinifar/DSSS-2025/tree/main")
+                }
+            }
             // Help
             Rectangle {
                 width: parent.width
@@ -209,7 +231,7 @@ Item {
                     }
 
                     Text {
-                        text: "Help"
+                        text: "Documents"
                         font.pixelSize: 12
                         color: textColor
                     }
@@ -220,13 +242,43 @@ Item {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     hoverEnabled: true
-                    onClicked: {
-                        console.log("Help clicked")
-                        customMenu.close()
-                    }
+                    onClicked: Qt.openUrlExternally("https://github.com/vahidmoeinifar/DSSS-2025/blob/main/Documents.md")
                 }
             }
 
+            // readme
+            Rectangle {
+                width: parent.width
+                height: 40
+                color: menuReadMeArea.containsMouse ? Qt.lighter(elementsColor, 1.2) : "transparent"
+
+                Row {
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.left: parent.left
+                    anchors.leftMargin: 10
+                    spacing: 10
+
+                    Text {
+                        text: "📚"
+                        font.pixelSize: 14
+                        color: textColor
+                    }
+
+                    Text {
+                        text: "Readme"
+                        font.pixelSize: 12
+                        color: textColor
+                    }
+                }
+
+                MouseArea {
+                    id: menuReadMeArea
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
+                    onClicked: Qt.openUrlExternally("https://github.com/vahidmoeinifar/DSSS-2025/blob/main/README.md")
+                }
+            }
             // About
             Rectangle {
                 width: parent.width
