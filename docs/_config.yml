@@ -1,18 +1,25 @@
-title: "GDSS Simulator"
-description: "Group Decision Support System Simulator Documentation"
-theme: jekyll-theme-cayman  # GitHub's built-in theme
+title: "GDSS Simulator Documentation"
+description: "Complete documentation for GDSS Simulator"
+baseurl: "/gdss-simulator"
+url: "https://yourusername.github.io"
+theme: jekyll-theme-cayman
 
-# Custom CSS
-remote_theme: pages-themes/cayman@v0.2.0
-plugins:
-  - jekyll-remote-theme
+# Include these folders
+include:
+  - _includes
+  - _layouts
+  - assets
 
-# Custom styling
+# Exclude unnecessary files
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+
+# Jekyll settings
+markdown: kramdown
+highlighter: rouge
+
+# Customize theme
 cayman:
-  # Use your Qt app colors
-  accent_color: "#396C70"
-  accent_color_dark: "#2a5154"
-  page_background_color: "#162026"
-  text_color: "#F7F4E9"
-  code_background_color: "#1a2229"
-  border_color: "#2d3842"
+  skin: dark

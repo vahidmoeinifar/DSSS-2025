@@ -1,111 +1,19 @@
 <aside class="sidebar">
     <div class="logo">
-        <a href="/gdss-simulator/">
-            <div class="logo-icon">
-                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M16 4L28 10V22L16 28L4 22V10L16 4Z" fill="#396C70"/>
-                    <path d="M16 4L28 10M16 4L4 10M16 4V28M28 10V22L16 28M28 10L16 16M4 10V22L16 28M4 10L16 16M16 28V16" stroke="#2a5154" stroke-width="2"/>
-                    <circle cx="16" cy="16" r="6" fill="#F7F4E9"/>
-                    <circle cx="10" cy="12" r="2" fill="#396C70"/>
-                    <circle cx="22" cy="12" r="2" fill="#396C70"/>
-                    <circle cx="10" cy="20" r="2" fill="#396C70"/>
-                    <circle cx="22" cy="20" r="2" fill="#396C70"/>
-                </svg>
-            </div>
-            <div class="logo-text">
-                <h1>GDSS Simulator</h1>
-                <p>Documentation</p>
-            </div>
+        <a href="{{ '/' | relative_url }}">
+            <h1>GDSS Simulator</h1>
+            <p>Documentation</p>
         </a>
     </div>
-
-    <div class="search-box">
-        <div class="search-input">
-            <i class="fas fa-search"></i>
-            <input type="text" id="docSearch" placeholder="Search documentation...">
-        </div>
-    </div>
-
+    
     <nav class="sidebar-nav">
-        <div class="nav-section">
-            <h3><i class="fas fa-home"></i> Getting Started</h3>
-            <ul class="nav-links">
-                <li><a href="/gdss-simulator/" class="{% if page.url == '/' %}active{% endif %}">Home</a></li>
-                <li><a href="/gdss-simulator/introduction" class="{% if page.url contains 'introduction' %}active{% endif %}">Introduction</a></li>
-                <li><a href="/gdss-simulator/getting-started" class="{% if page.url contains 'getting-started' %}active{% endif %}">Installation Guide</a></li>
-                <li><a href="/gdss-simulator/quick-start" class="{% if page.url contains 'quick-start' %}active{% endif %}">Quick Start</a></li>
-            </ul>
-        </div>
-
-        <div class="nav-section">
-            <h3><i class="fas fa-book"></i> User Guide</h3>
-            <ul class="nav-links">
-                <li><a href="/gdss-simulator/interface-overview" class="{% if page.url contains 'interface' %}active{% endif %}">Interface Overview</a></li>
-                <li><a href="/gdss-simulator/data-input" class="{% if page.url contains 'data-input' %}active{% endif %}">Data Input Methods</a></li>
-                <li><a href="/gdss-simulator/algorithms" class="{% if page.url contains 'algorithms' %}active{% endif %}">Fusion Algorithms</a></li>
-                <li><a href="/gdss-simulator/files" class="{% if page.url contains 'files' %}active{% endif %}">Working with Files</a></li>
-                <li><a href="/gdss-simulator/advanced-features" class="{% if page.url contains 'advanced' %}active{% endif %}">Advanced Features</a></li>
-            </ul>
-        </div>
-
-        <div class="nav-section">
-            <h3><i class="fas fa-code"></i> Technical Reference</h3>
-            <ul class="nav-links">
-                <li><a href="/gdss-simulator/architecture" class="{% if page.url contains 'architecture' %}active{% endif %}">System Architecture</a></li>
-                <li><a href="/gdss-simulator/algorithms-detailed" class="{% if page.url contains 'algorithms-detailed' %}active{% endif %}">Algorithms Details</a></li>
-                <li><a href="/gdss-simulator/api" class="{% if page.url contains 'api' %}active{% endif %}">API Reference</a></li>
-                <li><a href="/gdss-simulator/custom-scripts" class="{% if page.url contains 'custom' %}active{% endif %}">Custom Scripts</a></li>
-            </ul>
-        </div>
-
-        <div class="nav-section">
-            <h3><i class="fas fa-question-circle"></i> Help & Support</h3>
-            <ul class="nav-links">
-                <li><a href="/gdss-simulator/faq" class="{% if page.url contains 'faq' %}active{% endif %}">FAQ</a></li>
-                <li><a href="/gdss-simulator/troubleshooting" class="{% if page.url contains 'troubleshooting' %}active{% endif %}">Troubleshooting</a></li>
-                <li><a href="/gdss-simulator/examples" class="{% if page.url contains 'examples' %}active{% endif %}">Examples & Tutorials</a></li>
-                <li><a href="/gdss-simulator/glossary" class="{% if page.url contains 'glossary' %}active{% endif %}">Glossary</a></li>
-            </ul>
-        </div>
-
-        <div class="nav-section">
-            <h3><i class="fas fa-external-link-alt"></i> External Links</h3>
-            <ul class="nav-links">
-                <li><a href="https://github.com/yourusername/gdss-simulator" target="_blank">
-                    <i class="fab fa-github"></i> GitHub Repository
-                </a></li>
-                <li><a href="https://github.com/yourusername/gdss-simulator/issues" target="_blank">
-                    <i class="fas fa-bug"></i> Report Issues
-                </a></li>
-                <li><a href="https://github.com/yourusername/gdss-simulator/discussions" target="_blank">
-                    <i class="fas fa-comments"></i> Discussions
-                </a></li>
-                <li><a href="https://github.com/yourusername/gdss-simulator/releases" target="_blank">
-                    <i class="fas fa-download"></i> Download
-                </a></li>
-            </ul>
-        </div>
+        <ul>
+            <li><a href="{{ '/' | relative_url }}">Home</a></li>
+            <li><a href="{{ '/introduction' | relative_url }}">Introduction</a></li>
+            <li><a href="{{ '/getting-started' | relative_url }}">Getting Started</a></li>
+            <li><a href="{{ '/user-guide' | relative_url }}">User Guide</a></li>
+            <li><a href="{{ '/technical-reference' | relative_url }}">Technical Reference</a></li>
+            <li><a href="{{ '/faq' | relative_url }}">FAQ</a></li>
+        </ul>
     </nav>
-
-    <div class="sidebar-footer">
-        <div class="version-info">
-            <div class="version-badge">
-                <span class="version-tag">v1.0.0</span>
-                <span class="version-status stable">Stable</span>
-            </div>
-            <p>Last updated: {{ site.time | date: "%b %d, %Y" }}</p>
-        </div>
-        
-        <div class="theme-switcher">
-            <button id="themeToggle" class="theme-btn">
-                <i class="fas fa-moon"></i>
-                <span>Dark Mode</span>
-            </button>
-        </div>
-        
-        <div class="copyright">
-            <p>&copy; 2024 GDSS Simulator</p>
-            <p class="author">Vahid Moeinifar</p>
-        </div>
-    </div>
 </aside>
