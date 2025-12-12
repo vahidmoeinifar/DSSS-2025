@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if page.title %}{{ page.title }} - GDSS Simulator{% else %}GDSS Simulator Documentation{% endif %}</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="{% if page.description %}{{ page.description }}{% else %}Complete documentation for Group Decision Support System Simulator{% endif %}">
+    
+    <!-- Fonts & Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="/gdss-simulator/assets/css/style.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/gdss-simulator/assets/favicon.svg">
+    
+    <!-- Syntax Highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css">
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "GDSS Simulator",
+        "description": "Group Decision Support System Simulator",
+        "applicationCategory": "Educational",
+        "operatingSystem": "Windows, macOS, Linux",
+        "author": {
+            "@type": "Person",
+            "name": "Vahid Moeinifar"
+        }
+    }
+    </script>
+</head>
+<body>
+    <!-- Mobile Toggle Button -->
+    <button class="sidebar-toggle" id="sidebarToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+    
+    <!-- Sidebar Overlay (Mobile) -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    <!-- Sidebar -->
+    {% include sidebar.html %}
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Breadcrumbs -->
+        <nav class="breadcrumbs">
+            <a href="/gdss-simulator/">Home</a>
+            {% if page.title != 'Home' %}
+            <span class="separator">/</span>
+            <span>{{ page.title }}</span>
+            {% endif %}
+        </nav>
+        
+        <!-- Page Content -->
+        <article class="markdown-content">
+            {{ content }}
+        </article>
+        
+        <!-- Page Navigation -->
+        <div class="page-navigation">
+            {% if page.previous %}
+            <a href="{{ page.previous.url }}" class="nav-prev">
+                <i class="fas fa-arrow-left"></i>
+                <span>{{ page.previous.title }}</span>
+            </a>
+            {% endif %}
+            
+            {% if page.next %}
+            <a href="{{ page.next.url }}" class="nav-next">
+                <span>{{ page.next.title }}</span>
+                <i class="fas fa-arrow-right"></i>
+            </a>
+            {% endif %}
+        </div>
+    </main>
+    
+    <!-- Back to Top -->
+    <a href="#" class="back-to-top" id="backToTop">
+        <i class="fas fa-arrow-up"></i>
+    </a>
+    
+    <!-- JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script src="/gdss-simulator/assets/js/main.js"></script>
+    
+    <!-- Initialize Highlight.js -->
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            document.querySelectorAll('pre code').forEach((el) => {
+                hljs.highlightElement(el);
+            });
+        });
+    </script>
+</body>
+</html>
