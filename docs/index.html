@@ -53,33 +53,50 @@
         
         <p>Welcome to the Group Decision Support System Simulator documentation.</p>
         
-        <p>This documentation is built with GitHub Pages. Please visit:</p>
+        <p>This documentation is built with GitHub Pages.</p>
         
         <div style="text-align: center; margin: 30px 0;">
-            <a href="/gdss-simulator/" class="btn">View Documentation Home</a>
-            <a href="https://github.com/yourusername/gdss-simulator" class="btn" style="background: #333;">GitHub Repository</a>
+            <a href="https://github.com/YOUR_USERNAME/gdss-simulator" class="btn" style="background: #333;">
+                View GitHub Repository
+            </a>
         </div>
         
-        <h2>Quick Links</h2>
+        <h2>Documentation</h2>
+        <p>The documentation site is being built. Please check back in a few minutes.</p>
+        
+        <h2>Status Check</h2>
         <ul>
-            <li><a href="/gdss-simulator/getting-started">Getting Started Guide</a></li>
-            <li><a href="/gdss-simulator/installation">Installation Instructions</a></li>
-            <li><a href="/gdss-simulator/usage">User Guide</a></li>
+            <li>✅ GitHub Pages enabled? <a href="https://github.com/YOUR_USERNAME/gdss-simulator/settings/pages">Check Settings</a></li>
+            <li>✅ .nojekyll file exists? Should be in /docs folder</li>
+            <li>✅ Files pushed? Check the Actions tab</li>
         </ul>
         
-        <h2>If you see this page, it means:</h2>
+        <p><strong>Next steps:</strong></p>
         <ol>
-            <li>GitHub Pages is working</li>
-            <li>But the markdown files might need time to build</li>
-            <li>Or you need to clear your browser cache</li>
+            <li>Wait 2-3 minutes for GitHub Pages to deploy</li>
+            <li>Check Actions tab for build status</li>
+            <li>Clear browser cache (Ctrl+F5)</li>
         </ol>
-        
-        <p><strong>Try:</strong></p>
-        <ul>
-            <li>Wait 2-3 minutes after pushing changes</li>
-            <li>Hard refresh (Ctrl+F5 or Cmd+Shift+R)</li>
-            <li>Visit: <a href="https://yourusername.github.io/gdss-simulator/">https://yourusername.github.io/gdss-simulator/</a></li>
-        </ul>
     </div>
+    
+    <script>
+        // Update with your actual username
+        const username = 'YOUR_USERNAME'; // CHANGE THIS!
+        const repo = 'gdss-simulator';
+        
+        // Update all links
+        document.querySelectorAll('a').forEach(link => {
+            if (link.href.includes('yourusername')) {
+                link.href = link.href.replace('yourusername', username);
+            }
+            if (link.href.includes('YOUR_USERNAME')) {
+                link.href = link.href.replace('YOUR_USERNAME', username);
+            }
+        });
+        
+        // Display current URL
+        const url = `https://${username}.github.io/${repo}/`;
+        document.body.innerHTML += `<p style="text-align: center; margin-top: 30px; color: #888;">Site URL: <a href="${url}">${url}</a></p>`;
+    </script>
 </body>
 </html>
