@@ -2,43 +2,33 @@ import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
-// This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
-
 const config: Config = {
-
- title: 'GDSS Simulator',
-  url: 'https://vahidmoeinifar.github.io',
-  baseUrl: '/gdss-simulator/', // Replace with your repo name
-  organizationName: 'vahidmoeinifar',
-  projectName: 'gdss-simulator',
-  deploymentBranch: 'main/gdss-docs', // Or 'main' if using /docs folder
-  trailingSlash: false,
-
-
-  tagline: 'by Vahid Moeinifar',
+  title: 'GDSS Simulator',
+  tagline: 'Group Decision Support System Simulator',
   favicon: 'img/favicon.ico',
 
-  // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
+  // ===== IMPORTANT: GitHub Pages Config =====
+  url: 'https://vahidmoeinifar.github.io',
+  baseUrl: '/DSSS-2025/',  // Must match your repository name exactly
+  organizationName: 'vahidmoeinifar',
+  projectName: 'DSSS-2025',
+  
+  // ===== Deployment Config =====
+  // Option A: Use gh-pages branch (Recommended)
+  deploymentBranch: 'gh-pages',
+  trailingSlash: false,
+  
+  // Option B: If you want to use /docs folder instead, use this:
+  // outDir: './docs',  // Uncomment this to build to /docs folder
+  // deploymentBranch: 'main',  // Keep as main
+
   future: {
-    v4: true, // Improve compatibility with the upcoming Docusaurus v4
+    v4: true,
   },
 
-  // Set the production url of your site here
-  url: 'https://your-docusaurus-site.example.com',
-  // Set the /<baseUrl>/ pathname under which your site is served
-  // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/',
-
-  // GitHub pages deployment config.
-  // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'VaNo', // Usually your GitHub org/user name.
-  projectName: 'docusaurus', // Usually your repo name.
-
   onBrokenLinks: 'throw',
+  onBrokenMarkdownLinks: 'warn',
 
-  // Even if you don't use internationalization, you can use this field to set
-  // useful metadata like html lang. For example, if your site is Chinese, you
-  // may want to replace "en" with "zh-Hans".
   i18n: {
     defaultLocale: 'en',
     locales: ['en'],
@@ -50,25 +40,12 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/vahidmoeinifar/DSSS-2025',
+          routeBasePath: '/',  // Makes docs the homepage
+          editUrl: 'https://github.com/vahidmoeinifar/DSSS-2025/tree/main/',
         },
         blog: {
           showReadingTime: true,
-          feedOptions: {
-            type: ['rss', 'atom'],
-            xslt: true,
-          },
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/vahidmoeinifar/DSSS-2025',
-          // Useful options to enforce blogging best practices
-          onInlineTags: 'warn',
-          onInlineAuthors: 'warn',
-          onUntruncatedBlogPosts: 'warn',
+          editUrl: 'https://github.com/vahidmoeinifar/DSSS-2025/tree/main/',
         },
         theme: {
           customCss: './src/css/custom.css',
@@ -78,15 +55,14 @@ const config: Config = {
   ],
 
   themeConfig: {
-    // Replace with your project's social card
     image: 'img/docusaurus-social-card.jpg',
     colorMode: {
       respectPrefersColorScheme: true,
     },
     navbar: {
-      title: 'My Site',
+      title: 'GDSS Simulator',
       logo: {
-        alt: 'My Site Logo',
+        alt: 'GDSS Logo',
         src: 'img/logo.svg',
       },
       items: [
@@ -94,9 +70,13 @@ const config: Config = {
           type: 'docSidebar',
           sidebarId: 'tutorialSidebar',
           position: 'left',
-          label: 'Tutorial',
+          label: 'Documentation',
         },
-       
+        {
+          to: '/blog',
+          label: 'Blog',
+          position: 'left'
+        },
         {
           href: 'https://github.com/vahidmoeinifar/DSSS-2025',
           label: 'GitHub',
@@ -108,21 +88,41 @@ const config: Config = {
       style: 'dark',
       links: [
         {
-          title: 'Docs',
+          title: 'Documentation',
           items: [
             {
-              label: 'Tutorial',
+              label: 'Getting Started',
               to: '/docs/intro',
+            },
+            {
+              label: 'User Guide',
+              to: '/docs/category/user-guide',
+            },
+            {
+              label: 'API Reference',
+              to: '/docs/category/api-reference',
             },
           ],
         },
-       
+        {
+          title: 'Community',
+          items: [
+            {
+              label: 'GitHub Discussions',
+              href: 'https://github.com/vahidmoeinifar/DSSS-2025/discussions',
+            },
+            {
+              label: 'Issues',
+              href: 'https://github.com/vahidmoeinifar/DSSS-2025/issues',
+            },
+          ],
+        },
         {
           title: 'More',
           items: [
             {
-              label: 'Readme',
-              to: 'https://github.com/vahidmoeinifar/DSSS-2025/blob/main/README.md',
+              label: 'Blog',
+              to: '/blog',
             },
             {
               label: 'GitHub',
@@ -131,7 +131,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} GDSS Simulator, by Vahid Moeinifar . Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} GDSS Simulator by Vahid Moeinifar. Built with Docusaurus.`,
     },
     prism: {
       theme: prismThemes.github,
