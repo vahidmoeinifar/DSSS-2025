@@ -9,7 +9,7 @@ const config: Config = {
 
   // ===== IMPORTANT: GitHub Pages Config =====
   url: 'https://vahidmoeinifar.github.io',
-  baseUrl: '/docs/',  // Must match your repository name exactly
+  baseUrl: '/DSSS-2025/',  // This is correct!
   organizationName: 'vahidmoeinifar',
   projectName: 'DSSS-2025',
   
