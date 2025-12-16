@@ -7,20 +7,14 @@ const config: Config = {
   tagline: 'Group Decision Support System Simulator',
   favicon: 'img/favicon.ico',
 
-  // ===== IMPORTANT: GitHub Pages Config =====
   url: 'https://vahidmoeinifar.github.io',
   baseUrl: '/DSSS-2025/',  // This is correct!
   organizationName: 'vahidmoeinifar',
   projectName: 'DSSS-2025',
   
-  // ===== Deployment Config =====
-  // Option A: Use gh-pages branch (Recommended)
   deploymentBranch: 'gh-pages',
   trailingSlash: false,
   
-  // Option B: If you want to use /docs folder instead, use this:
-  // outDir: './docs',  // Uncomment this to build to /docs folder
-  // deploymentBranch: 'main',  // Keep as main
 
   future: {
     v4: true,
@@ -41,10 +35,6 @@ const config: Config = {
         docs: {
           sidebarPath: './sidebars.ts',
           routeBasePath: '/',  // Makes docs the homepage
-          editUrl: 'https://github.com/vahidmoeinifar/DSSS-2025/tree/main/',
-        },
-        blog: {
-          showReadingTime: true,
           editUrl: 'https://github.com/vahidmoeinifar/DSSS-2025/tree/main/',
         },
         theme: {
@@ -72,12 +62,7 @@ const config: Config = {
           position: 'left',
           label: 'Documentation',
         },
-        {
-          to: '/blog',
-          label: 'Blog',
-          position: 'left'
-        },
-        {
+          {
           href: 'https://github.com/vahidmoeinifar/DSSS-2025',
           label: 'GitHub',
           position: 'right',
@@ -92,28 +77,11 @@ const config: Config = {
           items: [
             {
               label: 'Getting Started',
-              to: '/docs/intro',
+              to: '/Getting%20Started',
             },
             {
-              label: 'User Guide',
-              to: '/docs/category/user-guide',
-            },
-            {
-              label: 'API Reference',
-              to: '/docs/category/api-reference',
-            },
-          ],
-        },
-        {
-          title: 'Community',
-          items: [
-            {
-              label: 'GitHub Discussions',
-              href: 'https://github.com/vahidmoeinifar/DSSS-2025/discussions',
-            },
-            {
-              label: 'Issues',
-              href: 'https://github.com/vahidmoeinifar/DSSS-2025/issues',
+              label: 'Frequently Asked Questions',
+              to: '/Frequently%20Asked%20Questions',
             },
           ],
         },
@@ -121,8 +89,8 @@ const config: Config = {
           title: 'More',
           items: [
             {
-              label: 'Blog',
-              to: '/blog',
+              label: 'Readme',
+              to: 'https://github.com/vahidmoeinifar/DSSS-2025/blob/main/README.md',
             },
             {
               label: 'GitHub',

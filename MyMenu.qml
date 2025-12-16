@@ -242,7 +242,7 @@ Item {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     hoverEnabled: true
-                    onClicked: Qt.openUrlExternally("https://github.com/vahidmoeinifar/DSSS-2025/blob/main/Documents.md")
+                    onClicked: Qt.openUrlExternally("https://vahidmoeinifar.github.io/DSSS-2025/")
                 }
             }
 

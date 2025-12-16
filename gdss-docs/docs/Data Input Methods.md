@@ -2,19 +2,7 @@
 sidebar_position: 5
 ---
 
-### Method 1: Manual Single Entry
-
-Use this method when you want to add values one at a time, perhaps as they come in from different sources.
-
-1.  Locate the text field labeled "**Enter value (0-1)...**" in the left panel.
-2.  Type any number between **0 and 1**. You can use up to three decimal places (like 0.125 or 0.75).
-3.  Press the **Enter** key or click the "**Add**" button beside the field.
-4.  The value appears in your agent list with a sequential number (Agent 1, Agent 2, etc.).
-5.  To remove any value, click the "**×**" button beside it.
-
-> **Tips:** You can quickly enter multiple values by typing a number, pressing Enter, typing the next number, pressing Enter, and so on. The field automatically clears after each addition so you can keep typing without clicking.
-
-### Method 2: Batch Text Input
+### Method 1: Manual Single Entry - Batch Text Input
 
 When you have multiple values from a spreadsheet or text document, this method saves time.
 
@@ -30,7 +18,7 @@ When you have multiple values from a spreadsheet or text document, this method s
 > * `0.9;0.8;0.7;0.6` (semicolons)
 > * Mixed: `0.1, 0.2 0.3; 0.4`
 
-### Method 3: File Import
+### Method 2: File Import
 
 For large datasets or when working with saved data files.
 
