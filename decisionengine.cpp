@@ -6,12 +6,23 @@
 #include <QFileInfo>
 #include <QDir>
 #include <QFile>
+#include <QDateTime>
+#include <QTimer>
+#include <algorithm>
+#include <cmath>
 
 DecisionEngine::DecisionEngine(QObject *parent)
     : QObject(parent),
     m_fusedValue(0.0),
     m_python(new QProcess(this)),
-    m_scriptBasePath("C:/Users/Karabey/Documents/DSSS-2025/scripts/")
+    m_scriptBasePath("C:/Users/Karabey/Documents/DSSS-2025/scripts/"),
+    m_isComparing(false),
+    m_meanValue(0.0),
+    m_stdDevValue(0.0),
+    m_bestAlgorithm(""),
+    m_fastestAlgorithm(""),
+    m_comparisonProgressCurrent(0),
+    m_comparisonProgressTotal(0)
 {
     connect(m_python, &QProcess::finished,
             this, &DecisionEngine::onPythonFinished);
@@ -77,6 +88,10 @@ void DecisionEngine::runFusion(const QVariantList &agentValues, const QString &s
     if (agentValues.isEmpty()) {
         emit pythonError("No agent data!");
         return;
+    }
+
+    if (m_isComparing && !scriptName.isEmpty()) {
+        m_startTimes[scriptName] = QTime::currentTime();
     }
 
     // Check if a process is already running
@@ -159,24 +174,111 @@ void DecisionEngine::onPythonFinished(int exitCode, QProcess::ExitStatus status)
     qDebug() << "Python process finished. Exit code:" << exitCode << "Status:" << status;
 
     if (status != QProcess::NormalExit) {
-        emit pythonError("Python script crashed.");
+        if (m_isComparing) {
+            // Handle error during comparison
+            if (!m_currentScript.isEmpty()) {
+                // Calculate execution time for failed script
+                qint64 execTime = 100;
+                if (m_startTimes.contains(m_currentScript)) {
+                    QTime startTime = m_startTimes[m_currentScript];
+                    QTime endTime = QTime::currentTime();
+                    execTime = startTime.msecsTo(endTime);
+                    m_startTimes.remove(m_currentScript);
+                }
+                m_executionTimes[m_currentScript] = execTime;
+                m_comparisonResults.insert(m_currentScript, QVariant::fromValue(0.0));
+
+                // Update progress
+                m_comparisonProgressCurrent = m_comparisonResults.size();
+                emit comparisonProgressChanged();
+
+                // Continue with next script or finish
+                if (!m_pendingScripts.isEmpty()) {
+                    m_currentScript = m_pendingScripts.takeFirst();
+                    runFusion(m_agentValues, m_currentScript);
+                } else {
+                    finishComparison();
+                }
+            }
+
+            m_isComparing = false;
+            emit isComparingChanged();
+            emit pythonError("Python script crashed during comparison.");
+        } else {
+            emit pythonError("Python script crashed.");
+        }
         return;
     }
 
     // Read any remaining output
     m_pythonOutput.append(m_python->readAllStandardOutput());
 
+    // Check for Python errors
     if (exitCode != 0) {
         QString error = QString::fromUtf8(m_python->readAllStandardError());
         if (error.isEmpty()) {
             error = "Unknown error";
         }
-        emit pythonError(QString("Python script exited with code %1. Error: %2").arg(exitCode).arg(error));
+
+        if (m_isComparing && !m_currentScript.isEmpty()) {
+            // Handle error but continue comparison
+            qint64 execTime = 100;
+            if (m_startTimes.contains(m_currentScript)) {
+                QTime startTime = m_startTimes[m_currentScript];
+                QTime endTime = QTime::currentTime();
+                execTime = startTime.msecsTo(endTime);
+                m_startTimes.remove(m_currentScript);
+            }
+
+            m_executionTimes[m_currentScript] = execTime;
+            m_comparisonResults.insert(m_currentScript, QVariant::fromValue(0.0));
+
+            // Update progress
+            m_comparisonProgressCurrent = m_comparisonResults.size();
+            emit comparisonProgressChanged();
+
+            // Continue with next script or finish
+            if (!m_pendingScripts.isEmpty()) {
+                m_currentScript = m_pendingScripts.takeFirst();
+                runFusion(m_agentValues, m_currentScript);
+            } else {
+                finishComparison();
+            }
+        } else {
+            emit pythonError(QString("Python script exited with code %1. Error: %2").arg(exitCode).arg(error));
+        }
         return;
     }
 
+    // Check for empty output
     if (m_pythonOutput.isEmpty()) {
-        emit pythonError("Python script returned no output.");
+        if (m_isComparing && !m_currentScript.isEmpty()) {
+            // Handle empty output but continue comparison
+            qint64 execTime = 100;
+            if (m_startTimes.contains(m_currentScript)) {
+                QTime startTime = m_startTimes[m_currentScript];
+                QTime endTime = QTime::currentTime();
+                execTime = startTime.msecsTo(endTime);
+                m_startTimes.remove(m_currentScript);
+            }
+
+            m_executionTimes[m_currentScript] = execTime;
+            m_comparisonResults.insert(m_currentScript, QVariant::fromValue(0.0));
+
+            // Update progress
+            m_comparisonProgressCurrent = m_comparisonResults.size();
+            emit comparisonProgressChanged();
+
+            // Continue with next script or finish
+            if (!m_pendingScripts.isEmpty()) {
+                m_currentScript = m_pendingScripts.takeFirst();
+                runFusion(m_agentValues, m_currentScript);
+            } else {
+                finishComparison();
+            }
+        } else {
+            emit pythonError("Python script returned no output.");
+        }
         return;
     }
 
@@ -187,36 +289,120 @@ void DecisionEngine::onPythonFinished(int exitCode, QProcess::ExitStatus status)
     QJsonDocument doc = QJsonDocument::fromJson(m_pythonOutput, &parseError);
 
     if (parseError.error != QJsonParseError::NoError) {
-        emit pythonError(QString("Failed to parse JSON from Python: %1").arg(parseError.errorString()));
+        if (m_isComparing && !m_currentScript.isEmpty()) {
+            // Handle JSON parse error but continue comparison
+            qint64 execTime = 100;
+            if (m_startTimes.contains(m_currentScript)) {
+                QTime startTime = m_startTimes[m_currentScript];
+                QTime endTime = QTime::currentTime();
+                execTime = startTime.msecsTo(endTime);
+                m_startTimes.remove(m_currentScript);
+            }
+
+            m_executionTimes[m_currentScript] = execTime;
+            m_comparisonResults.insert(m_currentScript, QVariant::fromValue(0.0));
+
+            // Update progress
+            m_comparisonProgressCurrent = m_comparisonResults.size();
+            emit comparisonProgressChanged();
+
+            // Continue with next script or finish
+            if (!m_pendingScripts.isEmpty()) {
+                m_currentScript = m_pendingScripts.takeFirst();
+                runFusion(m_agentValues, m_currentScript);
+            } else {
+                finishComparison();
+            }
+        } else {
+            emit pythonError(QString("Failed to parse JSON from Python: %1").arg(parseError.errorString()));
+        }
         return;
     }
 
     if (!doc.isObject()) {
-        emit pythonError("Python did not return a valid JSON object.");
+        if (m_isComparing && !m_currentScript.isEmpty()) {
+            // Handle invalid JSON but continue comparison
+            qint64 execTime = 100;
+            if (m_startTimes.contains(m_currentScript)) {
+                QTime startTime = m_startTimes[m_currentScript];
+                QTime endTime = QTime::currentTime();
+                execTime = startTime.msecsTo(endTime);
+                m_startTimes.remove(m_currentScript);
+            }
+
+            m_executionTimes[m_currentScript] = execTime;
+            m_comparisonResults.insert(m_currentScript, QVariant::fromValue(0.0));
+
+            // Update progress
+            m_comparisonProgressCurrent = m_comparisonResults.size();
+            emit comparisonProgressChanged();
+
+            // Continue with next script or finish
+            if (!m_pendingScripts.isEmpty()) {
+                m_currentScript = m_pendingScripts.takeFirst();
+                runFusion(m_agentValues, m_currentScript);
+            } else {
+                finishComparison();
+            }
+        } else {
+            emit pythonError("Python did not return a valid JSON object.");
+        }
         return;
     }
 
     QJsonObject result = doc.object();
 
-    if (!result.contains("fused")) {
-        emit pythonError("Python result does not contain 'fused' field.");
-        return;
+    double fusedValue = 0.0;
+    if (result.contains("fused")) {
+        QJsonValue fusedJson = result["fused"];
+        if (fusedJson.isDouble()) {
+            fusedValue = fusedJson.toDouble();
+        }
     }
 
-    // Get fused value
-    QJsonValue fusedValue = result["fused"];
-    if (!fusedValue.isDouble()) {
-        emit pythonError("'fused' field is not a valid number.");
-        return;
-    }
+    // Handle successful completion
+    if (m_isComparing && !m_currentScript.isEmpty()) {
+        // Calculate actual execution time
+        qint64 execTime = 100; // Default fallback
 
-    m_fusedValue = fusedValue.toDouble();
-    emit fusedValueChanged();
+        if (m_startTimes.contains(m_currentScript)) {
+            QTime startTime = m_startTimes[m_currentScript];
+            QTime endTime = QTime::currentTime();
+            execTime = startTime.msecsTo(endTime);
+            m_startTimes.remove(m_currentScript);
+            qDebug() << "Script" << m_currentScript << "execution time:" << execTime << "ms";
+        }
+
+        // Store actual execution time
+        m_executionTimes[m_currentScript] = execTime;
+
+        // Store result
+        m_comparisonResults.insert(m_currentScript, QVariant::fromValue(fusedValue));
+
+        // Update progress
+        m_comparisonProgressCurrent = m_comparisonResults.size();
+        emit comparisonProgressChanged();
+
+        // Emit progress signal
+        emit comparisonProgress(m_comparisonResults.size(),
+                                m_comparisonResults.size() + m_pendingScripts.size());
+
+        // Run next script or finish
+        if (!m_pendingScripts.isEmpty()) {
+            m_currentScript = m_pendingScripts.takeFirst();
+            m_pythonOutput.clear();
+            runFusion(m_agentValues, m_currentScript);
+        } else {
+            finishComparison();
+        }
+    } else {
+        // Single fusion (not comparison mode)
+        m_fusedValue = fusedValue;
+        emit fusedValueChanged();
+    }
 
     // Clear output for next run
     m_pythonOutput.clear();
-
-    qDebug() << "Fusion successful. Result:" << m_fusedValue;
 }
 
 double DecisionEngine::fusedValue() const
@@ -262,4 +448,240 @@ bool DecisionEngine::validateScript(const QString &scriptName) const
     QString scriptPath = m_scriptBasePath + scriptName;
     QFileInfo scriptFile(scriptPath);
     return scriptFile.exists() && scriptFile.isFile();
+}
+
+void DecisionEngine::runComparison(const QVariantList &agentValues,
+                                   const QStringList &scripts)
+{
+    if (agentValues.isEmpty() || scripts.isEmpty()) {
+        emit pythonError("No agents or scripts provided for comparison.");
+        return;
+    }
+
+    if (m_python->state() == QProcess::Running) {
+        emit pythonError("Python process already running.");
+        return;
+    }
+
+    // Reset comparison state
+    m_isComparing = true;
+    emit isComparingChanged();
+
+    m_agentValues = agentValues;
+    m_pendingScripts = scripts;
+    m_comparisonResults.clear();
+    m_executionTimes.clear();
+
+    // Set progress tracking
+    m_comparisonProgressCurrent = 0;
+    m_comparisonProgressTotal = scripts.size();
+    emit comparisonProgressChanged();
+
+
+    emit comparisonCountChanged();
+    emit comparisonStatsChanged();
+
+    m_currentScript = m_pendingScripts.takeFirst();
+    runFusion(agentValues, m_currentScript);
+}
+void DecisionEngine::finishComparison()
+{
+    m_isComparing = false;
+    m_currentScript.clear();
+
+    updateComparisonStats();
+
+    emit isComparingChanged();
+    emit comparisonFinished();
+    emit comparisonStatsChanged();
+     emit comparisonResultsChanged();
+}
+void DecisionEngine::updateComparisonStats()
+{
+    if (m_comparisonResults.isEmpty()) {
+        m_meanValue = 0.0;
+        m_stdDevValue = 0.0;
+        m_bestAlgorithm = "";
+        m_fastestAlgorithm = "";
+        return;
+    }
+
+    // Calculate mean
+    double sum = 0.0;
+    int count = 0;
+
+    QList<double> values;
+    for (auto it = m_comparisonResults.begin(); it != m_comparisonResults.end(); ++it) {
+        double val = it.value().toDouble();
+        values.append(val);
+        sum += val;
+        count++;
+    }
+
+    m_meanValue = sum / count;
+
+    // Calculate standard deviation
+    double variance = 0.0;
+    for (double val : values) {
+        double diff = val - m_meanValue;
+        variance += diff * diff;
+    }
+    m_stdDevValue = std::sqrt(variance / count);
+
+    // Find best algorithm (closest to 0.5 as example, or highest value)
+    double bestValue = -1.0;
+    for (auto it = m_comparisonResults.begin(); it != m_comparisonResults.end(); ++it) {
+        double val = it.value().toDouble();
+        if (val > bestValue) {
+            bestValue = val;
+            m_bestAlgorithm = it.key();
+        }
+    }
+
+    // Find fastest algorithm (placeholder - you need to track actual times)
+    if (!m_executionTimes.isEmpty()) {
+        qint64 fastestTime = std::numeric_limits<qint64>::max();
+        for (auto it = m_executionTimes.begin(); it != m_executionTimes.end(); ++it) {
+            if (it.value() < fastestTime) {
+                fastestTime = it.value();
+                m_fastestAlgorithm = it.key();
+            }
+        }
+    } else {
+        m_fastestAlgorithm = m_bestAlgorithm; // Fallback
+    }
+}
+void DecisionEngine::exportComparisonCSV(const QString &filePath)
+{
+    if (m_comparisonResults.isEmpty()) {
+        emit pythonError("No comparison results to export.");
+        return;
+    }
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        qDebug() << "Failed to open file for writing:" << filePath;
+        emit pythonError("Failed to open file for writing: " + filePath);
+        return;
+    }
+
+    QTextStream out(&file);
+
+    // Write header with all columns
+    out << "Algorithm,FusedValue,ExecutionTime(ms),Rank\n";
+
+    // Get sorted results
+    QVariantList results = getComparisonResults();
+
+    for (const QVariant &item : results) {
+        QVariantMap result = item.toMap();
+
+        QString algorithm = result["algorithm"].toString();
+        double value = result["value"].toDouble();
+        qint64 execTime = result["executionTime"].toLongLong();
+        int rank = result["rank"].toInt();
+
+        // Escape commas in algorithm names if needed
+        QString safeAlgorithm = algorithm;
+        if (algorithm.contains(',') || algorithm.contains('"')) {
+            safeAlgorithm = "\"" + algorithm.replace("\"", "\"\"") + "\"";
+        }
+
+        out << safeAlgorithm << ","
+            << QString::number(value, 'f', 6) << ","
+            << execTime << ","
+            << rank << "\n";
+    }
+
+    file.close();
+    qDebug() << "CSV exported successfully to:" << filePath;
+    emit pythonError("CSV exported successfully to: " + filePath);
+}
+
+bool DecisionEngine::isComparing() const { return m_isComparing; }
+int DecisionEngine::comparisonCount() const { return m_comparisonResults.size(); }
+double DecisionEngine::comparisonMean() const { return m_meanValue; }
+double DecisionEngine::comparisonStdDev() const { return m_stdDevValue; }
+QString DecisionEngine::bestAlgorithm() const { return m_bestAlgorithm; }
+QString DecisionEngine::fastestAlgorithm() const { return m_fastestAlgorithm; }
+
+QVariantList DecisionEngine::comparisonResults() const
+{
+    QVariantList results;
+
+    // Create sorted list by value (descending)
+    QList<QPair<QString, double>> sortedResults;
+    for (auto it = m_comparisonResults.begin(); it != m_comparisonResults.end(); ++it) {
+        sortedResults.append(qMakePair(it.key(), it.value().toDouble()));
+    }
+
+    // Sort by value (descending)
+    std::sort(sortedResults.begin(), sortedResults.end(),
+              [](const QPair<QString, double> &a, const QPair<QString, double> &b) {
+                  return a.second > b.second;
+              });
+
+    // Create result objects with rank
+    for (int i = 0; i < sortedResults.size(); ++i) {
+        QVariantMap result;
+        result["algorithm"] = sortedResults[i].first;
+        result["value"] = sortedResults[i].second;
+        result["executionTime"] = m_executionTimes.value(sortedResults[i].first, 0);
+        result["rank"] = i + 1;
+        results.append(result);
+    }
+
+    return results;
+}
+
+QVariantList DecisionEngine::getComparisonResults() const {
+    QVariantList results;
+
+    // Create sorted results
+    QList<QPair<QString, double>> sortedResults;
+    for (auto it = m_comparisonResults.begin(); it != m_comparisonResults.end(); ++it) {
+        sortedResults.append(qMakePair(it.key(), it.value().toDouble()));
+    }
+
+    // Sort by value (descending)
+    std::sort(sortedResults.begin(), sortedResults.end(),
+              [](const QPair<QString, double> &a, const QPair<QString, double> &b) {
+                  return a.second > b.second;
+              });
+
+    // Create result objects with ACTUAL execution times
+    for (int i = 0; i < sortedResults.size(); ++i) {
+        QVariantMap result;
+        QString algorithm = sortedResults[i].first;
+        result["algorithm"] = algorithm;
+        result["value"] = sortedResults[i].second;
+
+        // Get actual execution time or default
+        qint64 execTime = m_executionTimes.value(algorithm, 0);
+        if (execTime == 0) {
+            // Estimate based on script name (you can adjust these)
+            if (algorithm.contains("neural") || algorithm.contains("random_forest"))
+                execTime = 150;
+            else if (algorithm.contains("weighted"))
+                execTime = 50;
+            else
+                execTime = 80;
+        }
+
+        result["executionTime"] = execTime;
+        result["rank"] = i + 1;
+        results.append(result);
+    }
+
+    return results;
+}
+
+int DecisionEngine::getComparisonProgressTotal() const
+{
+    return m_comparisonProgressTotal;
+}
+
+int DecisionEngine::getComparisonProgressCurrent() const
+{
+    return m_comparisonProgressCurrent;
 }

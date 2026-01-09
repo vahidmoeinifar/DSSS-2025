@@ -529,6 +529,7 @@ ApplicationWindow {
                                 spacing: 10
                                 Layout.fillHeight: true
 
+
                                 Text {
                                     text: "Fusion Results"
                                     font.pixelSize: 20
@@ -568,33 +569,65 @@ ApplicationWindow {
                                     }
                                 }
 
-                                // Run Button
                                 MyButton {
-                                    id: runFusionButton
-                                    mainColor: elementsColor
+                                       id: runFusionButton
+                                       mainColor: elementsColor
+                                       Layout.fillWidth: true
+                                       Layout.preferredHeight: 45
+                                       text: "Run Fusion"
+                                       font.pixelSize: 14
+                                       font.bold: true
+                                       enabled: agentModel.count > 0 && scriptComboBox.currentIndex >= 0
+
+                                       onClicked: {
+                                           let arr = []
+                                           for (let i = 0; i < agentModel.count; i++)
+                                               arr.push(agentModel.get(i).value)
+
+                                           var selected = scriptModel.get(scriptComboBox.currentIndex)
+
+                                           startProgress()
+                                           messageText.text = "Running " + selected.name + " with " + agentModel.count + " agents..."
+
+                                           engine.runFusion(arr, selected.value)
+                                       }
+                                   }
+
+                                MyButton {
+                                    mainColor: "#5A8DEE"
                                     Layout.fillWidth: true
-                                    Layout.preferredHeight: 45
-                                    text: "Run Fusion"
-                                    font.pixelSize: 14
-                                    font.bold: true
-                                    enabled: agentModel.count > 0 && scriptComboBox.currentIndex >= 0
+                                    Layout.preferredHeight: 40
+                                    text: "Compare Algorithms"
+                                    font.pixelSize: 13
+                                    enabled: agentModel.count > 0
 
                                     onClicked: {
                                         let arr = []
-                                        for (let i = 0; i < agentModel.count; i++)
-                                            arr.push(agentModel.get(i).value)
+                                               let scripts = []
 
-                                        var selected = scriptModel.get(scriptComboBox.currentIndex)
+                                               for (let i = 0; i < agentModel.count; i++)
+                                                   arr.push(agentModel.get(i).value)
 
-                                        startProgress()
-                                        messageText.text = "Running " + selected.name + " with " + agentModel.count + " agents..."
+                                               for (let i = 0; i < scriptModel.count; i++)
+                                                   scripts.push(scriptModel.get(i).value)
 
-                                        engine.runFusion(arr, selected.value)
+                                               // Clear previous results
+                                               comparisonPopup.comparisonData.clear()
+
+                                               // Connect to finished signal
+                                               engine.comparisonFinished.connect(function() {
+                                                   comparisonPopup.loadComparisonData()
+                                               })
+
+                                               engine.runComparison(arr, scripts)
+                                               comparisonPopup.open()
                                     }
                                 }
 
-                                // Clear Results Button
-                                MyButton {
+                                Result{ id: comparisonPopup }
+
+                                   // Clear Results Button
+                                   MyButton {
                                     mainColor: removeColor
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 35

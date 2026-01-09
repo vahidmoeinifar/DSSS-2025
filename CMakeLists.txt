@@ -39,6 +39,7 @@ qt_add_qml_module(appDSSS_2025
         QML_FILES MyCombobox.qml
         QML_FILES MyTextfArea.qml
         QML_FILES FileReader.qml
+        QML_FILES Result.qml
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
