@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cmath>
 
+
 DecisionEngine::DecisionEngine(QObject *parent)
     : QObject(parent),
     m_fusedValue(0.0),
@@ -22,7 +23,9 @@ DecisionEngine::DecisionEngine(QObject *parent)
     m_bestAlgorithm(""),
     m_fastestAlgorithm(""),
     m_comparisonProgressCurrent(0),
-    m_comparisonProgressTotal(0)
+    m_comparisonProgressTotal(0),
+    m_historyManager(new HistoryManager(this)),
+    m_currentSingleScript("")
 {
     connect(m_python, &QProcess::finished,
             this, &DecisionEngine::onPythonFinished);
@@ -63,32 +66,155 @@ DecisionEngine::DecisionEngine(QObject *parent)
         }
         emit pythonError(errorMsg);
     });
+
+    // Log startup
+    m_historyManager->logInfo("DecisionEngine initialized", "System");
+}
+
+// Add destructor implementation
+DecisionEngine::~DecisionEngine()
+{
+    // Cleanup
+    if (m_python->state() == QProcess::Running) {
+        m_python->terminate();
+        m_python->waitForFinished(1000);
+    }
+
+    // Log shutdown
+    if (m_historyManager) {
+        m_historyManager->logInfo("DecisionEngine shutting down", "System");
+    }
+
+    delete m_python;
 }
 
 void DecisionEngine::addAgentValue(double value)
 {
-    m_agentValues.append(value);
+    addAgent(value, 1.0);
+}
+void DecisionEngine::addAgent(double value, double confidence)
+{
+    confidence = qBound(0.0, confidence, 1.0); // Clamp to [0, 1]
+    m_agents.append(AgentData(value, confidence));
+    emit agentsChanged();
+}
+void DecisionEngine::updateAgentConfidence(int index, double confidence)
+{
+    if (index >= 0 && index < m_agents.size()) {
+        confidence = qBound(0.0, confidence, 1.0);
+        m_agents[index].confidence = confidence;
+        emit agentConfidenceChanged(index);
+        emit agentsChanged();
+    }
+}
+
+void DecisionEngine::setAgentConfidence(int index, double confidence)
+{
+    updateAgentConfidence(index, confidence);
+}
+
+double DecisionEngine::getAgentConfidence(int index) const
+{
+    if (index >= 0 && index < m_agents.size()) {
+        return m_agents[index].confidence;
+    }
+    return 0.0;
+}
+
+QVariantList DecisionEngine::getAgentsWithConfidence() const
+{
+    QVariantList agents;
+    for (const AgentData& agent : m_agents) {
+        QVariantMap agentMap;
+        agentMap["value"] = agent.value;
+        agentMap["confidence"] = agent.confidence;
+        agents.append(agentMap);
+    }
+    return agents;
 }
 
 void DecisionEngine::clearValues()
 {
-    m_agentValues.clear();
+    m_agents.clear();
     m_fusedValue = 0.0;
     emit fusedValueChanged();
+    emit agentsChanged();
+}
+
+// ========== JSON CREATION HELPERS ==========
+
+QJsonObject DecisionEngine::createJsonForPython(const QVariantList &values,
+                                                const QVariantList &confidences)
+{
+    QJsonArray valuesArray;
+    QJsonArray confidencesArray;
+
+    // Add values
+    for (const QVariant &v : values) {
+        valuesArray.append(v.toDouble());
+    }
+
+    // Add confidences if provided
+    bool hasConfidences = !confidences.isEmpty() && (confidences.size() == values.size());
+    for (const QVariant &c : confidences) {
+        confidencesArray.append(c.toDouble());
+    }
+
+    QJsonObject root;
+    root["values"] = valuesArray;
+    root["agent_count"] = static_cast<int>(values.size());
+
+    if (hasConfidences) {
+        root["confidences"] = confidencesArray;
+    }
+
+    return root;
+}
+void DecisionEngine::runFusionWithConfidence(const QVariantList &agentValues,
+                                             const QVariantList &confidences)
+{
+    // Use default script (neural.py) if not specified
+    runFusionWithConfidence(agentValues, confidences, "neural.py");
+}
+void DecisionEngine::runFusionWithConfidence(const QVariantList &agentValues,
+                                             const QVariantList &confidences,
+                                             const QString &scriptName)
+{
+    if (agentValues.isEmpty()) {
+        QString errorMsg = "No agent data!";
+        m_historyManager->logError(errorMsg, "Fusion");
+        emit pythonError(errorMsg);
+        return;
+    }
+
+    // Store confidences
+    m_currentAgentConfidences = confidences;
+
+    // Call regular runFusion
+    runFusion(agentValues, scriptName);
 }
 
 void DecisionEngine::runFusion(const QVariantList &agentValues)
 {
-    // Use default script if none specified
     runFusion(agentValues, "neural.py");
 }
 
 void DecisionEngine::runFusion(const QVariantList &agentValues, const QString &scriptName)
 {
     if (agentValues.isEmpty()) {
-        emit pythonError("No agent data!");
+        QString errorMsg = "No agent data!";
+        m_historyManager->logError(errorMsg, "Fusion");
+        emit pythonError(errorMsg);
         return;
     }
+
+    // Log the start
+    m_historyManager->logInfo(
+        QString("Starting fusion with %1 agents using %2")
+            .arg(agentValues.size())
+            .arg(scriptName),
+        "Fusion"
+        );
 
     if (m_isComparing && !scriptName.isEmpty()) {
         m_startTimes[scriptName] = QTime::currentTime();
@@ -96,12 +222,19 @@ void DecisionEngine::runFusion(const QVariantList &agentValues, const QString &s
 
     // Check if a process is already running
     if (m_python->state() == QProcess::Running) {
-        emit pythonError("Python process is already running. Please wait.");
+        QString errorMsg = "Python process is already running. Please wait.";
+        m_historyManager->logError(errorMsg, "Fusion");
+        emit pythonError(errorMsg);
         return;
     }
 
     // Store values internally if needed
     m_agentValues = agentValues;
+
+    // Store script name for single fusion (if not comparing)
+    if (!m_isComparing) {
+        m_currentSingleScript = scriptName;
+    }
 
     // Clear previous output
     m_pythonOutput.clear();
@@ -114,19 +247,95 @@ void DecisionEngine::runFusion(const QVariantList &agentValues, const QString &s
     root["values"] = arr;
     root["agent_count"] = static_cast<int>(agentValues.size());
 
+    // Add confidences if available (FIXED: use m_agentConfidences)
+    if (!m_agentConfidences.isEmpty() &&
+        m_agentConfidences.size() == agentValues.size()) {
+        QJsonArray confidencesArr;
+        for (const QVariant &c : m_agentConfidences) {
+            confidencesArr.append(c.toDouble());
+        }
+        root["confidences"] = confidencesArr;
+    }
+
     QByteArray inputData = QJsonDocument(root).toJson();
     qDebug() << "Sending to Python:" << inputData;
 
     QString scriptPath;
-
-    // Check if scriptName is an absolute path or relative path
     QFileInfo scriptFile(scriptName);
 
     if (scriptFile.isAbsolute()) {
-        // It's an absolute path (custom script)
         scriptPath = scriptName;
     } else {
-        // It's a relative path (built-in script)
+        scriptPath = m_scriptBasePath + scriptName;
+    }
+
+    // Check if script exists
+    if (!QFile::exists(scriptPath)) {
+        QString errorMsg = QString("Script file not found: %1").arg(scriptPath);
+        m_historyManager->logError(errorMsg, "Fusion");
+        emit pythonError(errorMsg);
+        return;
+    }
+
+    qDebug() << "Running Python script:" << scriptPath;
+
+    // Set up the Python process
+    m_python->setProgram("python");
+    QStringList arguments;
+    arguments << scriptPath;
+
+    qDebug() << "Python arguments:" << arguments;
+    m_python->setArguments(arguments);
+
+    // Start the process
+    m_python->start();
+
+    // Check if process started successfully
+    if (!m_python->waitForStarted(5000)) {
+        QString errorMsg = "Failed to start Python process. Make sure Python is installed.";
+        m_historyManager->logError(errorMsg, "Fusion");
+        emit pythonError(errorMsg);
+        return;
+    }
+
+    // Send JSON to python stdin
+    qint64 bytesWritten = m_python->write(inputData);
+    if (bytesWritten == -1) {
+        QString errorMsg = "Failed to write data to Python process.";
+        m_historyManager->logError(errorMsg, "Fusion");
+        m_python->terminate();
+        emit pythonError(errorMsg);
+        return;
+    }
+
+    qDebug() << "Written" << bytesWritten << "bytes to Python stdin";
+    m_python->closeWriteChannel();
+}
+
+void DecisionEngine::sendToPython(const QJsonObject &jsonData, const QString &scriptName)
+{
+    if (m_isComparing && !scriptName.isEmpty()) {
+        m_startTimes[scriptName] = QTime::currentTime();
+    }
+
+    // Check if a process is already running
+    if (m_python->state() == QProcess::Running) {
+        emit pythonError("Python process is already running. Please wait.");
+        return;
+    }
+
+    // Clear previous output
+    m_pythonOutput.clear();
+
+    QByteArray inputData = QJsonDocument(jsonData).toJson();
+    qDebug() << "Sending to Python:" << inputData;
+
+    QString scriptPath;
+    QFileInfo scriptFile(scriptName);
+
+    if (scriptFile.isAbsolute()) {
+        scriptPath = scriptName;
+    } else {
         scriptPath = m_scriptBasePath + scriptName;
     }
 
@@ -140,15 +349,13 @@ void DecisionEngine::runFusion(const QVariantList &agentValues, const QString &s
 
     // Set up the Python process
     m_python->setProgram("python");
-
-    // Prepare arguments - FIXED: Don't quote the path, just pass it directly
     QStringList arguments;
     arguments << scriptPath;
 
     qDebug() << "Python arguments:" << arguments;
     m_python->setArguments(arguments);
 
-    // Start the process - FIXED: This line had the error
+    // Start the process
     m_python->start();
 
     // Check if process started successfully
@@ -169,24 +376,95 @@ void DecisionEngine::runFusion(const QVariantList &agentValues, const QString &s
     m_python->closeWriteChannel();
 }
 
+
+void DecisionEngine::runComparison(const QVariantList &agentValues,
+                                   const QStringList &scripts)
+{
+    runComparisonWithConfidence(agentValues, QVariantList(), scripts);
+}
+
+void DecisionEngine::runComparisonWithConfidence(const QVariantList &agentValues,
+                                                 const QVariantList &confidences,
+                                                 const QStringList &scripts)
+{
+    if (agentValues.isEmpty() || scripts.isEmpty()) {
+        QString errorMsg = "No agents or scripts provided for comparison.";
+        m_historyManager->logError(errorMsg, "Comparison");
+        emit pythonError(errorMsg);
+        return;
+    }
+
+    if (m_python->state() == QProcess::Running) {
+        QString errorMsg = "Python process already running.";
+        m_historyManager->logError(errorMsg, "Comparison");
+        emit pythonError(errorMsg);
+        return;
+    }
+
+    // Reset comparison state
+    m_isComparing = true;
+    emit isComparingChanged();
+
+    m_agentValues = agentValues;
+    m_agentConfidences = confidences;
+
+    m_pendingScripts = scripts;
+    m_comparisonResults.clear();
+    m_executionTimes.clear();
+
+    // Set progress tracking
+    m_comparisonProgressCurrent = 0;
+    m_comparisonProgressTotal = scripts.size();
+    emit comparisonProgressChanged();
+
+    emit comparisonCountChanged();
+    emit comparisonStatsChanged();
+
+    m_currentScript = m_pendingScripts.takeFirst();
+
+    // Log comparison start
+    m_historyManager->logInfo(
+        QString("Starting comparison of %1 algorithms with %2 agents")
+            .arg(scripts.size())
+            .arg(agentValues.size()),
+        "Comparison"
+        );
+
+    runFusion(agentValues, m_currentScript);
+}
+
 void DecisionEngine::onPythonFinished(int exitCode, QProcess::ExitStatus status)
 {
     qDebug() << "Python process finished. Exit code:" << exitCode << "Status:" << status;
 
+    // Calculate execution time
+    qint64 executionTime = 100; // Default
+    QString currentScriptForHistory = m_currentScript.isEmpty() ? m_currentSingleScript : m_currentScript;
+
+    if (m_startTimes.contains(currentScriptForHistory)) {
+        QTime startTime = m_startTimes[currentScriptForHistory];
+        QTime endTime = QTime::currentTime();
+        executionTime = startTime.msecsTo(endTime);
+        m_startTimes.remove(currentScriptForHistory);
+    }
+
     if (status != QProcess::NormalExit) {
+        QString errorMsg = "Python script crashed.";
+
         if (m_isComparing) {
             // Handle error during comparison
             if (!m_currentScript.isEmpty()) {
-                // Calculate execution time for failed script
-                qint64 execTime = 100;
-                if (m_startTimes.contains(m_currentScript)) {
-                    QTime startTime = m_startTimes[m_currentScript];
-                    QTime endTime = QTime::currentTime();
-                    execTime = startTime.msecsTo(endTime);
-                    m_startTimes.remove(m_currentScript);
-                }
-                m_executionTimes[m_currentScript] = execTime;
+                m_executionTimes[m_currentScript] = executionTime;
                 m_comparisonResults.insert(m_currentScript, QVariant::fromValue(0.0));
+
+                // Save error to history
+                m_historyManager->saveErrorResult(
+                    m_agentValues,
+                    m_agentConfidences,  // FIXED: use m_agentConfidences
+                    m_currentScript,
+                    errorMsg,
+                    executionTime
+                    );
 
                 // Update progress
                 m_comparisonProgressCurrent = m_comparisonResults.size();
@@ -203,10 +481,21 @@ void DecisionEngine::onPythonFinished(int exitCode, QProcess::ExitStatus status)
 
             m_isComparing = false;
             emit isComparingChanged();
-            emit pythonError("Python script crashed during comparison.");
+            emit pythonError(errorMsg);
         } else {
-            emit pythonError("Python script crashed.");
+            // Save single fusion error
+            m_historyManager->saveErrorResult(
+                m_agentValues,
+                m_agentConfidences,  // FIXED: use m_agentConfidences
+                m_currentSingleScript,
+                errorMsg,
+                executionTime
+                );
+
+            emit pythonError(errorMsg);
         }
+
+        m_historyManager->logError(errorMsg, "Fusion");
         return;
     }
 
@@ -220,18 +509,21 @@ void DecisionEngine::onPythonFinished(int exitCode, QProcess::ExitStatus status)
             error = "Unknown error";
         }
 
+        QString errorMsg = QString("Python script exited with code %1. Error: %2").arg(exitCode).arg(error);
+
         if (m_isComparing && !m_currentScript.isEmpty()) {
             // Handle error but continue comparison
-            qint64 execTime = 100;
-            if (m_startTimes.contains(m_currentScript)) {
-                QTime startTime = m_startTimes[m_currentScript];
-                QTime endTime = QTime::currentTime();
-                execTime = startTime.msecsTo(endTime);
-                m_startTimes.remove(m_currentScript);
-            }
-
-            m_executionTimes[m_currentScript] = execTime;
+            m_executionTimes[m_currentScript] = executionTime;
             m_comparisonResults.insert(m_currentScript, QVariant::fromValue(0.0));
+
+            // Save error to history
+            m_historyManager->saveErrorResult(
+                m_agentValues,
+                m_agentConfidences,  // FIXED: use m_agentConfidences
+                m_currentScript,
+                errorMsg,
+                executionTime
+                );
 
             // Update progress
             m_comparisonProgressCurrent = m_comparisonResults.size();
@@ -245,25 +537,39 @@ void DecisionEngine::onPythonFinished(int exitCode, QProcess::ExitStatus status)
                 finishComparison();
             }
         } else {
-            emit pythonError(QString("Python script exited with code %1. Error: %2").arg(exitCode).arg(error));
+            // Save single fusion error
+            m_historyManager->saveErrorResult(
+                m_agentValues,
+                m_agentConfidences,  // FIXED: use m_agentConfidences
+                m_currentSingleScript,
+                errorMsg,
+                executionTime
+                );
+
+            emit pythonError(errorMsg);
         }
+
+        m_historyManager->logError(errorMsg, "Fusion");
         return;
     }
 
     // Check for empty output
     if (m_pythonOutput.isEmpty()) {
+        QString errorMsg = "Python script returned no output.";
+
         if (m_isComparing && !m_currentScript.isEmpty()) {
             // Handle empty output but continue comparison
-            qint64 execTime = 100;
-            if (m_startTimes.contains(m_currentScript)) {
-                QTime startTime = m_startTimes[m_currentScript];
-                QTime endTime = QTime::currentTime();
-                execTime = startTime.msecsTo(endTime);
-                m_startTimes.remove(m_currentScript);
-            }
-
-            m_executionTimes[m_currentScript] = execTime;
+            m_executionTimes[m_currentScript] = executionTime;
             m_comparisonResults.insert(m_currentScript, QVariant::fromValue(0.0));
+
+            // Save error to history
+            m_historyManager->saveErrorResult(
+                m_agentValues,
+                m_agentConfidences,  // FIXED: use m_agentConfidences
+                m_currentScript,
+                errorMsg,
+                executionTime
+                );
 
             // Update progress
             m_comparisonProgressCurrent = m_comparisonResults.size();
@@ -277,8 +583,19 @@ void DecisionEngine::onPythonFinished(int exitCode, QProcess::ExitStatus status)
                 finishComparison();
             }
         } else {
-            emit pythonError("Python script returned no output.");
+            // Save single fusion error
+            m_historyManager->saveErrorResult(
+                m_agentValues,
+                m_agentConfidences,  // FIXED: use m_agentConfidences
+                m_currentSingleScript,
+                errorMsg,
+                executionTime
+                );
+
+            emit pythonError(errorMsg);
         }
+
+        m_historyManager->logError(errorMsg, "Fusion");
         return;
     }
 
@@ -289,18 +606,21 @@ void DecisionEngine::onPythonFinished(int exitCode, QProcess::ExitStatus status)
     QJsonDocument doc = QJsonDocument::fromJson(m_pythonOutput, &parseError);
 
     if (parseError.error != QJsonParseError::NoError) {
+        QString errorMsg = QString("Failed to parse JSON from Python: %1").arg(parseError.errorString());
+
         if (m_isComparing && !m_currentScript.isEmpty()) {
             // Handle JSON parse error but continue comparison
-            qint64 execTime = 100;
-            if (m_startTimes.contains(m_currentScript)) {
-                QTime startTime = m_startTimes[m_currentScript];
-                QTime endTime = QTime::currentTime();
-                execTime = startTime.msecsTo(endTime);
-                m_startTimes.remove(m_currentScript);
-            }
-
-            m_executionTimes[m_currentScript] = execTime;
+            m_executionTimes[m_currentScript] = executionTime;
             m_comparisonResults.insert(m_currentScript, QVariant::fromValue(0.0));
+
+            // Save error to history
+            m_historyManager->saveErrorResult(
+                m_agentValues,
+                m_agentConfidences,  // FIXED: use m_agentConfidences
+                m_currentScript,
+                errorMsg,
+                executionTime
+                );
 
             // Update progress
             m_comparisonProgressCurrent = m_comparisonResults.size();
@@ -314,24 +634,38 @@ void DecisionEngine::onPythonFinished(int exitCode, QProcess::ExitStatus status)
                 finishComparison();
             }
         } else {
-            emit pythonError(QString("Failed to parse JSON from Python: %1").arg(parseError.errorString()));
+            // Save single fusion error
+            m_historyManager->saveErrorResult(
+                m_agentValues,
+                m_agentConfidences,  // FIXED: use m_agentConfidences
+                m_currentSingleScript,
+                errorMsg,
+                executionTime
+                );
+
+            emit pythonError(errorMsg);
         }
+
+        m_historyManager->logError(errorMsg, "Fusion");
         return;
     }
 
     if (!doc.isObject()) {
+        QString errorMsg = "Python did not return a valid JSON object.";
+
         if (m_isComparing && !m_currentScript.isEmpty()) {
             // Handle invalid JSON but continue comparison
-            qint64 execTime = 100;
-            if (m_startTimes.contains(m_currentScript)) {
-                QTime startTime = m_startTimes[m_currentScript];
-                QTime endTime = QTime::currentTime();
-                execTime = startTime.msecsTo(endTime);
-                m_startTimes.remove(m_currentScript);
-            }
-
-            m_executionTimes[m_currentScript] = execTime;
+            m_executionTimes[m_currentScript] = executionTime;
             m_comparisonResults.insert(m_currentScript, QVariant::fromValue(0.0));
+
+            // Save error to history
+            m_historyManager->saveErrorResult(
+                m_agentValues,
+                m_agentConfidences,  // FIXED: use m_agentConfidences
+                m_currentScript,
+                errorMsg,
+                executionTime
+                );
 
             // Update progress
             m_comparisonProgressCurrent = m_comparisonResults.size();
@@ -345,14 +679,27 @@ void DecisionEngine::onPythonFinished(int exitCode, QProcess::ExitStatus status)
                 finishComparison();
             }
         } else {
-            emit pythonError("Python did not return a valid JSON object.");
+            // Save single fusion error
+            m_historyManager->saveErrorResult(
+                m_agentValues,
+                m_agentConfidences,  // FIXED: use m_agentConfidences
+                m_currentSingleScript,
+                errorMsg,
+                executionTime
+                );
+
+            emit pythonError(errorMsg);
         }
+
+        m_historyManager->logError(errorMsg, "Fusion");
         return;
     }
 
     QJsonObject result = doc.object();
 
     double fusedValue = 0.0;
+    double resultConfidence = 1.0; // Default confidence
+
     if (result.contains("fused")) {
         QJsonValue fusedJson = result["fused"];
         if (fusedJson.isDouble()) {
@@ -360,24 +707,33 @@ void DecisionEngine::onPythonFinished(int exitCode, QProcess::ExitStatus status)
         }
     }
 
+    // Check if Python returned confidence
+    if (result.contains("confidence")) {
+        QJsonValue confidenceJson = result["confidence"];
+        if (confidenceJson.isDouble()) {
+            resultConfidence = confidenceJson.toDouble();
+        }
+    }
+
     // Handle successful completion
     if (m_isComparing && !m_currentScript.isEmpty()) {
-        // Calculate actual execution time
-        qint64 execTime = 100; // Default fallback
-
-        if (m_startTimes.contains(m_currentScript)) {
-            QTime startTime = m_startTimes[m_currentScript];
-            QTime endTime = QTime::currentTime();
-            execTime = startTime.msecsTo(endTime);
-            m_startTimes.remove(m_currentScript);
-            qDebug() << "Script" << m_currentScript << "execution time:" << execTime << "ms";
-        }
-
         // Store actual execution time
-        m_executionTimes[m_currentScript] = execTime;
+        m_executionTimes[m_currentScript] = executionTime;
+        qDebug() << "Script" << m_currentScript << "execution time:" << executionTime << "ms";
 
         // Store result
         m_comparisonResults.insert(m_currentScript, QVariant::fromValue(fusedValue));
+
+        // Save to history
+        m_historyManager->saveFusionResult(
+            m_agentValues,
+            m_agentConfidences,
+            m_currentScript,
+            fusedValue,
+            resultConfidence,
+            executionTime,
+            "Comparison run"
+            );
 
         // Update progress
         m_comparisonProgressCurrent = m_comparisonResults.size();
@@ -399,12 +755,31 @@ void DecisionEngine::onPythonFinished(int exitCode, QProcess::ExitStatus status)
         // Single fusion (not comparison mode)
         m_fusedValue = fusedValue;
         emit fusedValueChanged();
+
+        // Save to history
+        m_historyManager->saveFusionResult(
+            m_agentValues,
+            m_agentConfidences,
+            m_currentSingleScript,
+            fusedValue,
+            resultConfidence,
+            executionTime,
+            "Single fusion"
+            );
+
+        // Log success
+        m_historyManager->logInfo(
+            QString("Fusion completed in %1ms with result: %2 (confidence: %3)")
+                .arg(executionTime)
+                .arg(fusedValue, 0, 'f', 4)
+                .arg(resultConfidence, 0, 'f', 2),
+            "Fusion"
+            );
     }
 
     // Clear output for next run
     m_pythonOutput.clear();
 }
-
 double DecisionEngine::fusedValue() const
 {
     return m_fusedValue;
@@ -450,40 +825,6 @@ bool DecisionEngine::validateScript(const QString &scriptName) const
     return scriptFile.exists() && scriptFile.isFile();
 }
 
-void DecisionEngine::runComparison(const QVariantList &agentValues,
-                                   const QStringList &scripts)
-{
-    if (agentValues.isEmpty() || scripts.isEmpty()) {
-        emit pythonError("No agents or scripts provided for comparison.");
-        return;
-    }
-
-    if (m_python->state() == QProcess::Running) {
-        emit pythonError("Python process already running.");
-        return;
-    }
-
-    // Reset comparison state
-    m_isComparing = true;
-    emit isComparingChanged();
-
-    m_agentValues = agentValues;
-    m_pendingScripts = scripts;
-    m_comparisonResults.clear();
-    m_executionTimes.clear();
-
-    // Set progress tracking
-    m_comparisonProgressCurrent = 0;
-    m_comparisonProgressTotal = scripts.size();
-    emit comparisonProgressChanged();
-
-
-    emit comparisonCountChanged();
-    emit comparisonStatsChanged();
-
-    m_currentScript = m_pendingScripts.takeFirst();
-    runFusion(agentValues, m_currentScript);
-}
 void DecisionEngine::finishComparison()
 {
     m_isComparing = false;

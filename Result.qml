@@ -11,7 +11,6 @@ Popup {
     focus: true
     dim: true
     anchors.centerIn: Overlay.overlay
-  //  closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
     property string title: "Algorithm Comparison Results"
     property bool showProgress: engine.isComparing
@@ -33,9 +32,9 @@ Popup {
 
 
     background: Rectangle {
-        color: "#162026"
+        color: bgColor
         radius: 8
-        border.color: "#396C70"
+        border.color: elementsColor
         border.width: 2
     }
 
@@ -58,7 +57,7 @@ Popup {
                     implicitHeight: 64
                     radius: width / 2
                     color: "transparent"
-                    border.color: "#396C70"
+                    border.color: elementsColor
                     border.width: 4
 
                     RotationAnimation on rotation {
@@ -72,13 +71,13 @@ Popup {
 
             Text {
                 text: "Comparing algorithms... (" + (engine.comparisonProgressCurrent + 1) + "/" + engine.comparisonProgressTotal + ")"
-                color: "#F7F4E9"
+                color: textColor
                 font.pixelSize: 14
             }
 
             Text {
                 text: "Please wait while all algorithms are executed"
-                color: Qt.lighter("#F7F4E9", 1.3)
+                color: Qt.lighter(textColor, 1.3)
                 font.pixelSize: 12
             }
         }
@@ -97,12 +96,12 @@ Popup {
                 text: comparisonPopup.title
                 font.pixelSize: 20
                 font.bold: true
-                color: "#F7F4E9"
+                color: textColor
                 Layout.fillWidth: true
             }
 
             MyButton {
-                mainColor: "#8F3939"
+                mainColor: removeColor
                 _width: 30
                 _height: 30
                 text: "✕"
@@ -114,16 +113,16 @@ Popup {
         Rectangle {
             Layout.fillWidth: true
             height: 1
-            color: "#396C70"
+            color: elementsColor
         }
 
         // Statistics Panel
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 130
-            color: Qt.darker("#162026", 1.1)
+            color: Qt.darker(bgColor, 1.1)
             radius: 5
-            border.color: "#396C70"
+            border.color: elementsColor
             border.width: 1
 
             ColumnLayout {
@@ -139,7 +138,7 @@ Popup {
                     Text {
                         text: "Mean Result:"
                         font.pixelSize: 12
-                        color: "#F7F4E9"
+                        color: textColor
                         Layout.alignment: Qt.AlignLeft
                         Layout.preferredWidth: 150
                     }
@@ -148,7 +147,7 @@ Popup {
                         text: engine.comparisonMean.toFixed(4)
                         font.pixelSize: 12
                         font.bold: true
-                        color: "#F7F4E9"
+                        color: textColor
                         Layout.alignment: Qt.AlignLeft
                     }
                 }
@@ -161,7 +160,7 @@ Popup {
                     Text {
                         text: "Standard Deviation:"
                         font.pixelSize: 12
-                        color: "#F7F4E9"
+                        color: textColor
                         Layout.alignment: Qt.AlignLeft
                         Layout.preferredWidth: 150
                     }
@@ -172,9 +171,9 @@ Popup {
                         font.bold: true
                         color: {
                             var std = engine.comparisonStdDev
-                            if (std < 0.1) return "#4CAF50"
-                            if (std < 0.2) return "#FFD166"
-                            return "#FF6B6B"
+                            if (std < 0.1) return lightGreenColor
+                            if (std < 0.2) return yellowColor
+                            return magentaColor
                         }
                         Layout.alignment: Qt.AlignLeft
                     }
@@ -188,7 +187,7 @@ Popup {
                     Text {
                         text: "Best Algorithm:"
                         font.pixelSize: 12
-                        color: "#F7F4E9"
+                        color: textColor
                         Layout.alignment: Qt.AlignLeft
                         Layout.preferredWidth: 150
                     }
@@ -211,7 +210,7 @@ Popup {
                     Text {
                         text: "Fastest Algorithm:"
                         font.pixelSize: 12
-                        color: "#F7F4E9"
+                        color: textColor
                         Layout.alignment: Qt.AlignLeft
                         Layout.preferredWidth: 150
                     }
@@ -220,7 +219,7 @@ Popup {
                         text: engine.fastestAlgorithm
                         font.pixelSize: 12
                         font.bold: true
-                        color: "#4FC3F7"
+                        color: cyanColor
                         elide: Text.ElideRight
                         Layout.fillWidth: true
                     }
@@ -230,7 +229,7 @@ Popup {
         Rectangle {
             Layout.fillWidth: true
             height: 1
-            color: "#396C70"
+            color: elementsColor
             Layout.topMargin: 10
             Layout.bottomMargin: 10
         }
@@ -244,7 +243,7 @@ Popup {
                 text: "Algorithm"
                 font.pixelSize: 12
                 font.bold: true
-                color: "#F7F4E9"
+                color: textColor
                 Layout.preferredWidth: 200
             }
 
@@ -252,7 +251,7 @@ Popup {
                 text: "Result"
                 font.pixelSize: 12
                 font.bold: true
-                color: "#F7F4E9"
+                color: textColor
                 Layout.preferredWidth: 100
             }
 
@@ -260,7 +259,7 @@ Popup {
                 text: "Time (ms)"
                 font.pixelSize: 12
                 font.bold: true
-                color: "#F7F4E9"
+                color: textColor
                 Layout.preferredWidth: 80
             }
 
@@ -268,7 +267,7 @@ Popup {
                 text: "Rank"
                 font.pixelSize: 12
                 font.bold: true
-                color: "#F7F4E9"
+                color: textColor
                 Layout.preferredWidth: 60
             }
 
@@ -283,7 +282,7 @@ Popup {
             Layout.fillWidth: true
             Layout.fillHeight: true
             color: "transparent"
-            border.color: "#396C70"
+            border.color: elementsColor
             border.width: 1
             radius: 4
 
@@ -297,7 +296,7 @@ Popup {
                 delegate: Rectangle {
                     width: comparisonListView.width
                     height: 40
-                    color: index % 2 === 0 ? Qt.darker("#162026", 1.1) : Qt.darker("#162026", 1.15)
+                    color: index % 2 === 0 ? Qt.darker(bgColor, 1.1) : Qt.darker(bgColor, 1.15)
 
                     RowLayout {
                         anchors.fill: parent
@@ -307,7 +306,7 @@ Popup {
                         Text {
                             text: model.algorithm
                             font.pixelSize: 11
-                            color: "#F7F4E9"
+                            color: textColor
                             Layout.preferredWidth: 200
                             elide: Text.ElideRight
                         }
@@ -316,9 +315,9 @@ Popup {
                             text: model.value.toFixed(4)
                             font.pixelSize: 11
                             color: {
-                                if (model.value < 0.3) return "#FF6B6B"
-                                if (model.value < 0.7) return "#FFD166"
-                                return "#4CAF50"
+                                if (model.value < 0.3) return magentaColor
+                                if (model.value < 0.7) return yellowColor
+                                return lightGreenColor
                             }
                             font.bold: true
                             Layout.preferredWidth: 100
@@ -327,7 +326,7 @@ Popup {
                         Text {
                             text: model.executionTime.toFixed(1)
                             font.pixelSize: 11
-                            color: "#4FC3F7"
+                            color: cyanColor
                             Layout.preferredWidth: 80
                         }
 
@@ -340,17 +339,17 @@ Popup {
                                 case 1: return "#FFD700";  // Gold
                                 case 2: return "#C0C0C0";  // Silver
                                 case 3: return "#CD7F32";  // Bronze
-                                default: return Qt.darker("#396C70", 1.3)
+                                default: return Qt.darker(elementsColor, 1.3)
                                 }
                             }
-                            border.color: "#396C70"
+                            border.color: elementsColor
                             border.width: 1
 
                             Text {
                                 text: model.rank
                                 font.pixelSize: 11
                                 font.bold: true
-                                color: model.rank <= 3 ? "black" : "#F7F4E9"
+                                color: model.rank <= 3 ? "black" : textColor
                                 anchors.centerIn: parent
                             }
                         }
@@ -359,16 +358,16 @@ Popup {
                             Layout.fillWidth: true
                             height: 10
                             radius: 5
-                            color: Qt.darker("#396C70", 1.5)
+                            color: Qt.darker(elementsColor, 1.5)
 
                             Rectangle {
                                 width: parent.width * (model.value)
                                 height: parent.height
                                 radius: parent.radius
                                 color: {
-                                    if (model.value < 0.3) return "#FF6B6B"
-                                    if (model.value < 0.7) return "#FFD166"
-                                    return "#4CAF50"
+                                    if (model.value < 0.3) return magentaColor
+                                    if (model.value < 0.7) return yellowColor
+                                    return lightGreenColor
                                 }
                             }
                         }
@@ -383,12 +382,11 @@ Popup {
             spacing: 10
 
             MyButton {
-                mainColor: "#396C70"
+                mainColor: elementsColor
                 Layout.fillWidth: true
                 _height: 35
                 text: "Export to CSV"
                 font.pixelSize: 12
-                //enabled: engine.comparisonCount > 0
                 onClicked: {
                     fileDialog.folder = StandardPaths.writableLocation(StandardPaths.DocumentsLocation)
                     fileDialog.open()
@@ -396,7 +394,7 @@ Popup {
             }
 
             MyButton {
-                mainColor: "#8F3939"
+                mainColor: removeColor
                 Layout.fillWidth: true
                 _height: 35
                 text: "Close"
@@ -440,7 +438,7 @@ Popup {
             engine.exportComparisonCSV(filePath);
 
             // Show success message
-            showMessage("Results exported to: " + filePath, "#4CAF50");
+            showMessage("Results exported to: " + filePath, lightGreenColor);
         }
 
         onRejected: {

@@ -5,12 +5,20 @@ import GDSS 1.0
 import Qt.labs.platform 1.1 // For FileDialog
 
 ApplicationWindow {
+
     property color bgColor: "#162026"
     property color textColor: "#F7F4E9"
+    property color textColorDark: "#2E2E2E"
+    property color textColorDisable: "#888888"
     property color elementsColor: "#396C70"
     property color removeColor: "#8F3939"
-    property color successColor: "#4CAF50"
+    property color successColor: "#1F7D38"
     property color warningColor: "#63261B"
+    property color yellowColor: "#FFD166"
+    property color cyanColor: "#4FC3F7"
+    property color magentaColor: "#FF6B6B"
+    property color darkScreenColor: "#0A0E12"
+    property color lightGreenColor: "#4CAF50"
 
     id: root
     width: 1000
@@ -25,6 +33,10 @@ ApplicationWindow {
         color: bgColor
     }
 
+    HistoryPanel {
+        id: historyPopup
+        engine: engine
+    }
     // Model holding agent values
     ListModel {
         id: agentModel
@@ -41,6 +53,7 @@ ApplicationWindow {
         ListElement { name: "Fuzzy Logic"; value: "fuzzy.py"; description: "Fuzzy logic rules" }
         ListElement { name: "Random Forest"; value: "random_forest.py"; description: "Ensemble method" }
         ListElement { name: "Consensus"; value: "consensus.py"; description: "Consensus-based fusion" }
+        ListElement { name: "Weighted with Confidence"; value: "weighted_with_confidence.py"; description: "weighted_with_confidence" }
     }
 
     // Property for custom script path
@@ -154,18 +167,72 @@ ApplicationWindow {
                                     color: textColor
                                 }
 
-                                MyButton {
-                                    id: openDataButton
-                                    mainColor: Qt.lighter(elementsColor, 1.2)
-                                    Layout.fillWidth: true
-                                    _height: 35
-                                    text: "📂 Open Data"
-                                    font.pixelSize: 12
+                                RowLayout {
+                                       spacing: 10
 
-                                    onClicked: {
-                                        dataFileDialog.open()
-                                    }
-                                }
+                                       MyTextfield {
+                                           id: valueInput
+                                           placeholderText: "Value (0-1)"
+                                           validator: DoubleValidator { bottom: 0.0; top: 1.0 }
+                                           Layout.fillWidth: true
+
+                                           // Clear on Enter
+                                           onAccepted: {
+                                               addAgentButton.clicked()
+                                           }
+                                       }
+
+                                       MyTextfield {
+                                           id: confidenceInput
+                                           placeholderText: "Confidence"
+                                           text: "1.0"
+                                           validator: DoubleValidator { bottom: 0.0; top: 1.0 }
+                                           Layout.preferredWidth: 80
+
+                                           // Clear on Enter
+                                           onAccepted: {
+                                               addAgentButton.clicked()
+                                           }
+                                       }
+
+                                       MyButton {
+                                           id: addAgentButton
+                                           mainColor: elementsColor
+                                           _width: 60
+                                           _height: 30
+                                           text: "Add"
+                                           onClicked: {
+                                               if (valueInput.text.length === 0) return
+
+                                               var value = parseFloat(valueInput.text)
+                                               var confidence = parseFloat(confidenceInput.text || "1.0")
+
+                                               // Clamp values
+                                               value = Math.max(0, Math.min(1, value))
+                                               confidence = Math.max(0, Math.min(1, confidence))
+
+                                               agentModel.append({
+                                                   "value": value,
+                                                   "confidence": confidence
+                                               })
+
+                                               valueInput.text = ""
+                                               confidenceInput.text = "1.0"
+                                               valueInput.focus = true
+                                           }
+                                       }
+                                   }
+
+                                   MyButton {
+                                       id: openDataButton
+                                       mainColor: Qt.lighter(elementsColor, 1.2)
+                                       Layout.fillWidth: true
+                                       _height: 35
+                                       text: "📂 Open Data"
+                                       font.pixelSize: 12
+                                       onClicked: dataFileDialog.open()
+                                   }
+
                                 // Batch Input Section
                                 ColumnLayout {
                                     spacing: 10
@@ -206,33 +273,48 @@ ApplicationWindow {
                                                 }
 
                                                 var text = valueInputii.text.trim()
-                                                var values = text.split(',').map(function(v) {
+                                                var valuePairs = text.split(',').map(function(v) {
                                                     return v.trim()
                                                 })
 
-                                                var validValues = []
+                                                var validPairs = []
                                                 var invalidCount = 0
 
-                                                for (var i = 0; i < values.length; i++) {
-                                                    var val = parseFloat(values[i])
-                                                    if (!isNaN(val) && val >= 0 && val <= 1) {
-                                                        validValues.push(val)
+                                                for (var i = 0; i < valuePairs.length; i++) {
+                                                    var pair = valuePairs[i]
+
+                                                    // Check if it's a value:confidence pair
+                                                    var parts = pair.split(':')
+                                                    var val, confidence = 1.0
+
+                                                    if (parts.length === 2) {
+                                                        // Has confidence: e.g., "0.75:0.8"
+                                                        val = parseFloat(parts[0])
+                                                        confidence = parseFloat(parts[1])
+                                                    } else {
+                                                        // Just value: e.g., "0.75"
+                                                        val = parseFloat(pair)
+                                                    }
+
+                                                    if (!isNaN(val) && val >= 0 && val <= 1 &&
+                                                        !isNaN(confidence) && confidence >= 0 && confidence <= 1) {
+                                                        validPairs.push({value: val, confidence: confidence})
                                                     } else {
                                                         invalidCount++
                                                     }
                                                 }
 
-                                                if (validValues.length > 0) {
-                                                    for (var j = 0; j < validValues.length; j++) {
-                                                        agentModel.append({ "value": validValues[j] })
+                                                if (validPairs.length > 0) {
+                                                    for (var j = 0; j < validPairs.length; j++) {
+                                                        agentModel.append(validPairs[j])
                                                     }
 
-                                                    showMessage("Added " + validValues.length + " valid values" +
+                                                    showMessage("Added " + validPairs.length + " valid agents" +
                                                                 (invalidCount > 0 ? " (" + invalidCount + " invalid ignored)" : ""),
                                                                 successColor)
                                                     valueInputii.text = ""
                                                 } else {
-                                                    showMessage("No valid values found (must be 0-1)", warningColor)
+                                                    showMessage("No valid values found (format: value or value:confidence)", warningColor)
                                                 }
                                             }
                                         }
@@ -251,8 +333,6 @@ ApplicationWindow {
                                         }
                                     }
                                 }
-
-
                                 // Agent List
                                 ColumnLayout {
                                     spacing: 5
@@ -280,37 +360,89 @@ ApplicationWindow {
 
                                             delegate: Rectangle {
                                                 width: list.width
-                                                height: 35
+                                                height: 50  // Increased height for confidence slider
                                                 color: index % 2 === 0 ? Qt.darker(bgColor, 1.1) : Qt.darker(bgColor, 1.15)
                                                 radius: 3
 
-                                                RowLayout {
+                                                ColumnLayout {
                                                     anchors.fill: parent
                                                     anchors.margins: 5
-                                                    spacing: 10
+                                                    spacing: 2
 
-                                                    Text {
-                                                        text: "Agent " + (index + 1)
-                                                        font.pixelSize: 11
-                                                        color: textColor
-                                                        Layout.preferredWidth: 60
-                                                    }
-
-                                                    Text {
-                                                        text: value.toFixed(4)
-                                                        font.pixelSize: 11
-                                                        color: textColor
+                                                    // Top row: Agent info and remove button
+                                                    RowLayout {
                                                         Layout.fillWidth: true
+
+                                                        Text {
+                                                            text: "Agent " + (index + 1)
+                                                            font.pixelSize: 11
+                                                            color: textColor
+                                                            Layout.preferredWidth: 60
+                                                        }
+
+                                                        Text {
+                                                            text: value.toFixed(4)
+                                                            font.pixelSize: 11
+                                                            color: textColor
+                                                            Layout.fillWidth: true
+                                                        }
+
+                                                        Text {
+                                                            text: (confidence * 100).toFixed(0) + "%"
+                                                            font.pixelSize: 11
+                                                            color: confidence > 0.7 ? lightGreenColor :
+                                                                   confidence > 0.4 ? yellowColor : magentaColor
+                                                            font.bold: true
+                                                            Layout.preferredWidth: 50
+                                                        }
+
+                                                        MyButton {
+                                                            mainColor: removeColor
+                                                            _width: 25
+                                                            _height: 20
+                                                            text: "×"
+                                                            font.pixelSize: 10
+                                                            font.bold: true
+                                                            onClicked: agentModel.remove(index)
+                                                        }
                                                     }
 
-                                                    MyButton {
-                                                        mainColor: removeColor
-                                                        _width: 25
-                                                        _height: 20
-                                                        text: "×"
-                                                        font.pixelSize: 10
-                                                        font.bold: true
-                                                        onClicked: agentModel.remove(index)
+                                                    // Bottom row: Confidence slider
+                                                    RowLayout {
+                                                        Layout.fillWidth: true
+                                                        spacing: 5
+
+                                                        Slider {
+                                                            id: confidenceSlider
+                                                            from: 0.0
+                                                            to: 1.0
+                                                            value: confidence
+                                                            stepSize: 0.01
+                                                            Layout.fillWidth: true
+
+                                                            onMoved: {
+                                                                agentModel.setProperty(index, "confidence", value)
+                                                            }
+
+                                                            background: Rectangle {
+                                                                implicitWidth: 200
+                                                                implicitHeight: 4
+                                                                color: Qt.darker(elementsColor, 1.5)
+                                                                radius: 2
+                                                            }
+
+                                                            handle: Rectangle {
+                                                                x: confidenceSlider.leftPadding + confidenceSlider.visualPosition *
+                                                                   (confidenceSlider.availableWidth - width)
+                                                                y: confidenceSlider.topPadding + confidenceSlider.availableHeight / 2 - height / 2
+                                                                implicitWidth: 16
+                                                                implicitHeight: 16
+                                                                radius: 8
+                                                                color: confidenceSlider.pressed ? Qt.lighter(elementsColor, 1.3) : elementsColor
+                                                                border.color: Qt.darker(elementsColor, 1.5)
+                                                                border.width: 2
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
@@ -561,40 +693,49 @@ ApplicationWindow {
                                         font.bold: true
                                         color: {
                                             if (engine.fusedValue === 0) return textColor
-                                            if (engine.fusedValue < 0.3) return "#FF6B6B"  // Red for low
-                                            if (engine.fusedValue < 0.7) return "#FFD166"  // Yellow for medium
-                                            return "#4CAF50"  // Your original successColor
+                                            if (engine.fusedValue < 0.3) return magentaColor  // Red for low
+                                            if (engine.fusedValue < 0.7) return yellowColor  // Yellow for medium
+                                            return lightGreenColor
                                         }
                                         anchors.centerIn: parent
                                     }
                                 }
 
                                 MyButton {
-                                       id: runFusionButton
-                                       mainColor: elementsColor
-                                       Layout.fillWidth: true
-                                       Layout.preferredHeight: 45
-                                       text: "Run Fusion"
-                                       font.pixelSize: 14
-                                       font.bold: true
-                                       enabled: agentModel.count > 0 && scriptComboBox.currentIndex >= 0
+                                    id: runFusionButton
+                                    mainColor: elementsColor
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 45
+                                    text: "Run Fusion"
+                                    font.pixelSize: 14
+                                    font.bold: true
+                                    enabled: agentModel.count > 0 && scriptComboBox.currentIndex >= 0
 
-                                       onClicked: {
-                                           let arr = []
-                                           for (let i = 0; i < agentModel.count; i++)
-                                               arr.push(agentModel.get(i).value)
+                                    onClicked: {
+                                        let values = []
+                                        let confidences = []
 
-                                           var selected = scriptModel.get(scriptComboBox.currentIndex)
+                                        for (let i = 0; i < agentModel.count; i++) {
+                                            let agent = agentModel.get(i)
+                                            values.push(agent.value)
+                                            confidences.push(agent.confidence)
+                                        }
 
-                                           startProgress()
-                                           messageText.text = "Running " + selected.name + " with " + agentModel.count + " agents..."
+                                        var selected = scriptModel.get(scriptComboBox.currentIndex)
 
-                                           engine.runFusion(arr, selected.value)
-                                       }
-                                   }
+                                        startProgress()
+                                        messageText.text = "Running " + selected.name + " with " + agentModel.count + " agents..."
 
+                                        if (selected.value === "weighted.py" || selected.value === "weighted_with_confidence.py") {
+                                            engine.runFusionWithConfidence(values, confidences, selected.value)
+                                        } else {
+                                            engine.runFusion(values, selected.value)
+                                        }
+                                    }
+                                }
                                 MyButton {
-                                    mainColor: "#5A8DEE"
+                                    id: runAllButton
+                                    mainColor: elementsColor
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 40
                                     text: "Compare Algorithms"
@@ -602,25 +743,30 @@ ApplicationWindow {
                                     enabled: agentModel.count > 0
 
                                     onClicked: {
-                                        let arr = []
-                                               let scripts = []
+                                        let values = []
+                                        let confidences = []
+                                        let scripts = []
 
-                                               for (let i = 0; i < agentModel.count; i++)
-                                                   arr.push(agentModel.get(i).value)
+                                        for (let i = 0; i < agentModel.count; i++) {
+                                            let agent = agentModel.get(i)
+                                            values.push(agent.value)
+                                            confidences.push(agent.confidence)
+                                        }
 
-                                               for (let i = 0; i < scriptModel.count; i++)
-                                                   scripts.push(scriptModel.get(i).value)
+                                        for (let i = 0; i < scriptModel.count; i++)
+                                            scripts.push(scriptModel.get(i).value)
 
-                                               // Clear previous results
-                                               comparisonPopup.comparisonData.clear()
+                                        // Clear previous results
+                                        comparisonPopup.comparisonData.clear()
 
-                                               // Connect to finished signal
-                                               engine.comparisonFinished.connect(function() {
-                                                   comparisonPopup.loadComparisonData()
-                                               })
+                                        // Connect to finished signal
+                                        engine.comparisonFinished.connect(function() {
+                                            comparisonPopup.loadComparisonData()
+                                        })
 
-                                               engine.runComparison(arr, scripts)
-                                               comparisonPopup.open()
+                                        // Use the confidence-aware comparison
+                                        engine.runComparisonWithConfidence(values, confidences, scripts)
+                                        comparisonPopup.open()
                                     }
                                 }
 
@@ -711,8 +857,6 @@ ApplicationWindow {
         }
     }
 
-    // In main.qml, replace the entire FileDialog handler and related functions:
-
     // File Dialog for opening data files
     FileDialog {
         id: dataFileDialog
@@ -735,13 +879,11 @@ ApplicationWindow {
 
     // Function to load data from file directly into model
     function loadDataFromFileDirectly(filePath) {
-        console.log("Loading file:", filePath)
+        console.log("Loading CSV file:", filePath)
 
-        // Create an XMLHttpRequest directly
         var xhr = new XMLHttpRequest()
         var fileUrl = filePath
 
-        // Ensure we have a proper file URL
         if (!filePath.startsWith("file://")) {
             if (Qt.platform.os === "windows") {
                 fileUrl = "file:///" + filePath
@@ -750,62 +892,142 @@ ApplicationWindow {
             }
         }
 
-        console.log("File URL:", fileUrl)
-
         xhr.open("GET", fileUrl)
         xhr.onreadystatechange = function() {
             if (xhr.readyState === XMLHttpRequest.DONE) {
-                console.log("XHR Status:", xhr.status)
                 if (xhr.status === 200 || xhr.status === 0) {
                     var content = xhr.responseText
-                    console.log("File content length:", content.length)
+                    console.log("File content (first 500 chars):", content.substring(0, 500))
 
                     var lines = content.split('\n')
-                    var validValues = []
+                    var validAgents = []
                     var invalidCount = 0
                     var fileName = filePath.split('/').pop().split('\\').pop()
+                    var hasHeader = false
 
-                    for (var i = 0; i < lines.length; i++) {
-                        var line = lines[i].trim()
-                        if (line.length === 0 || line.startsWith('#')) continue
-
-                        // Parse values
-                        var lineValues = line.split(/[,;\s]+/)
-                        for (var j = 0; j < lineValues.length; j++) {
-                            var val = parseFloat(lineValues[j])
-                            if (!isNaN(val) && val >= 0 && val <= 1) {
-                                validValues.push(val)
-                            } else {
-                                invalidCount++
-                            }
+                    // Check if first line is a header
+                    if (lines.length > 0) {
+                        var firstLine = lines[0].toLowerCase().trim()
+                        if (firstLine.includes('value') || firstLine.includes('confidence') ||
+                            firstLine.includes('agent')) {
+                            hasHeader = true
+                            console.log("Detected CSV header, skipping first line")
                         }
                     }
 
-                    console.log("Parsed values - valid:", validValues.length, "invalid:", invalidCount)
+                    for (var i = (hasHeader ? 1 : 0); i < lines.length; i++) {
+                        var line = lines[i].trim()
 
-                    if (validValues.length > 0) {
-                        // Directly append valid values to the model
-                        for (var k = 0; k < validValues.length; k++) {
-                            agentModel.append({ "value": validValues[k] })
+                        // Skip empty lines and comments
+                        if (line.length === 0 || line.startsWith('#') || line.startsWith('//')) {
+                            continue
                         }
 
-                        // Show success message
-                        var message = "Loaded " + validValues.length + " values from " + fileName
+                        console.log("Parsing line:", line)
+
+                        var value = NaN
+                        var confidence = 1.0
+                        var parts = []
+
+                        // Try different CSV parsing methods
+                        if (line.includes(',')) {
+                            // Standard CSV format
+                            parts = line.split(',')
+                            console.log("CSV parts:", parts.length, parts)
+
+                            if (parts.length >= 2) {
+                                // Format: value,confidence,... (more columns)
+                                value = parseFloat(parts[0].trim())
+                                confidence = parseFloat(parts[1].trim())
+                            } else if (parts.length === 1) {
+                                // Just value, default confidence
+                                value = parseFloat(parts[0].trim())
+                                confidence = 1.0
+                            }
+                        } else if (line.includes(';')) {
+                            // European CSV format (semicolon)
+                            parts = line.split(';')
+                            if (parts.length >= 2) {
+                                value = parseFloat(parts[0].trim())
+                                confidence = parseFloat(parts[1].trim())
+                            }
+                        } else if (line.includes('\t')) {
+                            // TSV format
+                            parts = line.split('\t')
+                            if (parts.length >= 2) {
+                                value = parseFloat(parts[0].trim())
+                                confidence = parseFloat(parts[1].trim())
+                            }
+                        } else if (line.includes(':')) {
+                            // value:confidence format
+                            parts = line.split(':')
+                            if (parts.length >= 2) {
+                                value = parseFloat(parts[0].trim())
+                                confidence = parseFloat(parts[1].trim())
+                            }
+                        } else {
+                            // Single value only
+                            value = parseFloat(line)
+                            confidence = 1.0
+                        }
+
+                        console.log("Parsed - Value:", value, "Confidence:", confidence)
+
+                        // Validate both value and confidence
+                        var valueValid = !isNaN(value) && value >= 0 && value <= 1
+                        var confidenceValid = !isNaN(confidence) && confidence >= 0 && confidence <= 1
+
+                        if (valueValid && confidenceValid) {
+                            validAgents.push({
+                                value: value,
+                                confidence: confidence
+                            })
+                            console.log("✓ Valid agent added")
+                        } else {
+                            invalidCount++
+                            console.log("✗ Invalid - Value valid:", valueValid, "Confidence valid:", confidenceValid)
+                        }
+                    }
+
+                    console.log("Parsing complete - Valid:", validAgents.length, "Invalid:", invalidCount)
+
+                    if (validAgents.length > 0) {
+                        // Clear existing agents first
+                        agentModel.clear()
+
+                        for (var k = 0; k < validAgents.length; k++) {
+                            agentModel.append(validAgents[k])
+                        }
+
+                        var message = "Loaded " + validAgents.length + " agents from " + fileName
                         if (invalidCount > 0) {
-                            message += " (" + invalidCount + " invalid values ignored)"
+                            message += " (" + invalidCount + " invalid entries ignored)"
                         }
                         showMessage(message, successColor)
+
+                        // Show sample of loaded data
+                        console.log("Sample loaded agents (first 3):")
+                        for (var s = 0; s < Math.min(3, validAgents.length); s++) {
+                            console.log("  Agent", s+1, ":", validAgents[s])
+                        }
                     } else {
-                        showMessage("No valid values (0-1) found in file", warningColor)
+                        showMessage("No valid agents found in file. Expected format: value,confidence", warningColor)
                     }
                 } else {
-                    console.error("Failed to read file")
+                    console.error("Failed to read file, status:", xhr.status)
                     showMessage("Failed to read file: " + xhr.statusText, removeColor)
                 }
             }
         }
+
+        xhr.onerror = function() {
+            console.error("XHR error occurred")
+            showMessage("Error reading file. Check if file exists and is accessible.", removeColor)
+        }
+
         xhr.send()
     }
+
     // Script Info Popup
     Popup {
         id: scriptInfoPopup

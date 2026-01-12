@@ -10,51 +10,6 @@ Item {
     signal dataLoaded(var values, var fileName)
     signal showMessage(string message, color color)
 
-    FileDialog {
-        id: dataFileDialog
-        title: "Open Data File"
-        nameFilters: ["Text files (*.txt)", "CSV files (*.csv)", "All files (*)"]
-
-        onAccepted: {
-            var fileUrl = dataFileDialog.selectedFile
-            var fileName = fileUrl.toString().split('/').pop().split('\\').pop()
-
-            var xhr = new XMLHttpRequest()
-            xhr.open("GET", fileUrl)
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === XMLHttpRequest.DONE) {
-                    if (xhr.status === 200 || xhr.status === 0) {
-                        var content = xhr.responseText
-                        var lines = content.split('\n')
-                        var values = []
-
-                        for (var i = 0; i < lines.length; i++) {
-                            var line = lines[i].trim()
-                            if (line.length === 0) continue
-
-                            // Parse comma or space separated values
-                            var lineValues = line.split(/[,;\s\t]+/)
-                            for (var j = 0; j < lineValues.length; j++) {
-                                var val = parseFloat(lineValues[j])
-                                if (!isNaN(val) && val >= 0 && val <= 1) {
-                                    values.push(val)
-                                }
-                            }
-                        }
-
-                        if (values.length > 0) {
-                            dataLoaded(values, fileName)  // Emit the signal
-                        } else {
-                            showMessage("No valid values found in file", warningColor)
-                        }
-                    } else {
-                        showMessage("Error reading file", removeColor)
-                    }
-                }
-            }
-            xhr.send()
-        }
-    }
 
     // Menu button
     Rectangle {
@@ -170,8 +125,48 @@ Item {
                 }
             }
 
+            // Separator
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: elementsColor
+            }
+            Rectangle {
+                width: parent.width
+                height: 40
+                color: menuLogTrack.containsMouse ? Qt.lighter(elementsColor, 1.2) : "transparent"
 
+                Row {
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.left: parent.left
+                    anchors.leftMargin: 10
+                    spacing: 10
 
+                    Text {
+                        text: "📚"
+                        font.pixelSize: 14
+                        color: textColor
+                    }
+
+                    Text {
+                        text: "History & Logs"
+                        font.pixelSize: 12
+                        color: textColor
+                    }
+                }
+
+                MouseArea {
+                    id: menuLogTrack
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
+                    onClicked: {
+                        historyPopup.engine = engine  // Pass engine reference
+                        historyPopup.open()
+                        customMenu.close()
+                    }
+                }
+            }
             // Separator
             Rectangle {
                 width: parent.width
@@ -209,7 +204,10 @@ Item {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     hoverEnabled: true
-                    onClicked: Qt.openUrlExternally("https://github.com/vahidmoeinifar/DSSS-2025/tree/main")
+                    onClicked: {
+                        Qt.openUrlExternally("https://github.com/vahidmoeinifar/DSSS-2025/tree/main")
+                        customMenu.close()
+                    }
                 }
             }
             // Help
@@ -242,7 +240,10 @@ Item {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     hoverEnabled: true
-                    onClicked: Qt.openUrlExternally("https://vahidmoeinifar.github.io/DSSS-2025/")
+                    onClicked: {
+                        Qt.openUrlExternally("https://vahidmoeinifar.github.io/DSSS-2025/")
+                        customMenu.close()
+                    }
                 }
             }
 
@@ -276,7 +277,10 @@ Item {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     hoverEnabled: true
-                    onClicked: Qt.openUrlExternally("https://github.com/vahidmoeinifar/DSSS-2025/blob/main/README.md")
+                    onClicked: {
+                        Qt.openUrlExternally("https://github.com/vahidmoeinifar/DSSS-2025/blob/main/README.md")
+                        customMenu.close()
+                    }
                 }
             }
             // About
