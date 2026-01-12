@@ -1,1 +1,0 @@
-"use strict";(globalThis.webpackChunkgdss_docs=globalThis.webpackChunkgdss_docs||[]).push([[3468],{1536:s=>{s.exports=JSON.parse('{"metadata":{"permalink":"/DSSS-2025/blog","page":1,"postsPerPage":10,"totalPages":1,"totalCount":4,"blogDescription":"Blog","blogTitle":"Blog"}}')}}]);

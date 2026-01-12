@@ -1,1 +1,0 @@
-"use strict";(globalThis.webpackChunkgdss_docs=globalThis.webpackChunkgdss_docs||[]).push([[1903],{1912:s=>{s.exports=JSON.parse('{"blogBasePath":"/DSSS-2025/blog","blogTitle":"Blog","authorsListPath":"/DSSS-2025/blog/authors"}')}}]);
