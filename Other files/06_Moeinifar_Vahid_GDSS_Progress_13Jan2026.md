@@ -184,7 +184,7 @@ ___
 | Performance optimization | ✅ Done | Using QProcess and multithreading
 ---
 
-## 6. Acknowledgments
+## 7. Acknowledgments
 
 This project is a full realization of theoretical decision support ideas into an operational, practical software package. The success of the integration of different programming languages, algorithmic methods and user interface paradigms argues for the usefulness of interdisciplinary cooperation with such complex kind of software engineering problems. The platform is prepared for academic research applications as well as practical decision support use cases.
 
