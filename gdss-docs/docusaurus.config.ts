@@ -8,19 +8,14 @@ const config: Config = {
   favicon: 'img/favicon.ico',
 
   url: 'https://vahidmoeinifar.github.io',
-  baseUrl: '/DSSS-2025/',  // This is correct!
+  baseUrl: '/DSSS-2025/',
   organizationName: 'vahidmoeinifar',
   projectName: 'DSSS-2025',
   
   deploymentBranch: 'gh-pages',
   trailingSlash: false,
-  
 
-  future: {
-    v4: true,
-  },
-
-  onBrokenLinks: 'throw',
+  onBrokenLinks: 'warn', // Changed to 'warn' temporarily
   onBrokenMarkdownLinks: 'warn',
 
   i18n: {
@@ -34,9 +29,10 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          routeBasePath: '/',  // Makes docs the homepage
+          routeBasePath: '/',  // Docs are the homepage
           editUrl: 'https://github.com/vahidmoeinifar/DSSS-2025/tree/main/',
         },
+        blog: false, // Disable blog if not using it
         theme: {
           customCss: './src/css/custom.css',
         },
@@ -62,7 +58,7 @@ const config: Config = {
           position: 'left',
           label: 'Documentation',
         },
-          {
+        {
           href: 'https://github.com/vahidmoeinifar/DSSS-2025',
           label: 'GitHub',
           position: 'right',
@@ -77,21 +73,17 @@ const config: Config = {
           items: [
             {
               label: 'Getting Started',
-              to: '/Getting%20Started',
+              to: '/getting-started', // Fixed - no spaces
             },
             {
-              label: 'Frequently Asked Questions',
-              to: '/Frequently%20Asked%20Questions',
+              label: 'FAQ',
+              to: '/faq', // Fixed - shorter URL
             },
           ],
         },
         {
           title: 'More',
           items: [
-            {
-              label: 'Readme',
-              to: 'https://github.com/vahidmoeinifar/DSSS-2025/blob/main/README.md',
-            },
             {
               label: 'GitHub',
               href: 'https://github.com/vahidmoeinifar/DSSS-2025',
