@@ -1,13 +1,5 @@
-
-  
-
-  
-
 ### Project Progress Report — GDSS Simulator - Final Report
 
-  
-
-  
 
 Name and surname: **Vahid Moeinifar**
 
@@ -15,7 +7,7 @@ Project title: **Group Decision Support System Simulator Based on Information Fu
 
 Project number: **06**
 
-Date of report: **Janruary 13, 2026**
+Date of report: **Janruary 12, 2026**
 
   
 
@@ -29,9 +21,9 @@ Date of report: **Janruary 13, 2026**
 
 ###  **What has already been completed**
 
--  **Multi-algorithm fusion framework supporting five distinct decision fusion methods:** neural network, weighted average, fuzzy logic, random forest, and consensus-based approaches
+-  **Multi-algorithm fusion framework supporting six distinct decision fusion methods:** neural network, weighted average, fuzzy logic, random forest, and consensus-based approaches
 
-  
+  -  **Comperehensive Log and hystory:** The Decision Support System implements comprehensive logging and history tracking through a dedicated HistoryManager module that automatically records all fusion operations, including agent inputs, confidence values, algorithm selection, execution results, and performance metrics. This persistent data layer enables detailed audit trails, performance analysis across algorithms, and post-decision review capabilities, with all entries timestamped, categorized by success/error status, and exportable in multiple formats (JSON, CSV) for external analysis and reporting.
 
 -  **Interactive user interface** with dual input methods (manual entry and batch CSV-style input), real-time validation, and visual feedback
 
@@ -176,9 +168,25 @@ ___
 
 ✅**Note:** Scenario simulation capabilities can be implemented as an extension using the existing architectural foundation, allowing for simulated decision-making scenarios with configurable agent behaviors and environmental factors.
 
+---
+## 6. What has been implemented additionally
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Batch Processing | ✅ Working | Supports comma-separated values and value:confidence format |
+| Direct Import from CSV/TXT files | ✅ Working | Automatic parsing with confidence support |
+| Multi-Algorithm Comparison | ✅ Working | Compares all available algorithms with progress tracking |
+| Real-time Fusion Results | ✅ Working | Visual feedback with color-coded results |
+| Execution Time Tracking | ✅ Working | Measures actual Python script execution time |
+| Export Results to CSV | ✅ Working | Comparison results can be exported |
+| Custom Script Loading | ✅ Working | Users can load and use custom Python scripts |
+| Confidence Weighting for Agents | ✅ Working | Each agent has adjustable confidence (0-1) |
+| Log and History System | ✅ Done | JSON-based history with filter, export, and statistics |
+| Performance optimization | ✅ Done | Using QProcess and multithreading
+---
+
 ## 6. Acknowledgments
 
-This project represents a comprehensive implementation of theoretical decision support concepts into a practical, usable software system. The successful integration of multiple programming languages, algorithmic approaches, and user interface paradigms demonstrates the viability of cross-disciplinary approaches to complex software engineering challenges. The system stands ready for both academic research applications and practical decision support scenarios.
+This project is a full realization of theoretical decision support ideas into an operational, practical software package. The success of the integration of different programming languages, algorithmic methods and user interface paradigms argues for the usefulness of interdisciplinary cooperation with such complex kind of software engineering problems. The platform is prepared for academic research applications as well as practical decision support use cases.
 
 
 
