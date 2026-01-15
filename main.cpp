@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
 
     qmlRegisterType<DecisionEngine>("GDSS", 1, 0, "DecisionEngine");
- qmlRegisterType<HistoryManager>("GDSS", 1, 0, "HistoryManager");
+    qmlRegisterType<HistoryManager>("GDSS", 1, 0, "HistoryManager");
 
     QQmlApplicationEngine engine;
     engine.load(QUrl(QStringLiteral("qrc:DSSS_2025/Main.qml")));
